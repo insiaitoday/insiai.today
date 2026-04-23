@@ -1,0 +1,19 @@
+import { createClient } from '@supabase/supabase-js';
+import dotenv from 'dotenv';
+
+dotenv.config();
+
+const supabaseUrl = process.env.SUPABASE_URL!;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+
+if (!supabaseUrl || !supabaseServiceKey) {
+  console.warn('⚠️  Supabase credentials missing — add SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY to .env');
+}
+
+// Admin client — bypasses RLS (server-side only)
+export const supabase = createClient(supabaseUrl || 'https://placeholder.supabase.co', supabaseServiceKey || 'placeholder', {
+  auth: {
+    autoRefreshToken: false,
+    persistSession: false,
+  },
+});

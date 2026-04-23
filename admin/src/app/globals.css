@@ -1,0 +1,109 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg: #0D1117;
+  --surface: #161B22;
+  --card: #1C2128;
+  --elevated: #21262D;
+  --border: #30363D;
+  --primary: #3B82F6;
+  --accent: #8B5CF6;
+  --text: #E6EDF3;
+  --text-secondary: #8B949E;
+  --success: #10B981;
+  --danger: #EF4444;
+  --warning: #F59E0B;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  background-color: var(--bg);
+  color: var(--text);
+  font-family: 'Inter', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: #30363D; border-radius: 3px; }
+
+@layer components {
+  .admin-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.25rem;
+  }
+
+  .admin-btn {
+    @apply inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200;
+  }
+
+  .admin-btn-primary {
+    @apply admin-btn text-white;
+    background: var(--primary);
+  }
+  .admin-btn-primary:hover { background: #2563EB; }
+
+  .admin-btn-danger  { @apply admin-btn bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20; }
+  .admin-btn-success { @apply admin-btn bg-green-500/10 text-green-400 border border-green-500/20 hover:bg-green-500/20; }
+  .admin-btn-ghost   { @apply admin-btn text-text-secondary border border-border hover:text-text-primary hover:border-border-strong hover:bg-background-elevated; }
+  .admin-btn-warning { @apply admin-btn bg-yellow-500/10 text-yellow-400 border border-yellow-500/20 hover:bg-yellow-500/20; }
+
+  .admin-input {
+    @apply w-full px-3 py-2 rounded-lg text-sm outline-none transition-all duration-200;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+  }
+  .admin-input::placeholder { color: var(--text-secondary); }
+  .admin-input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
+
+  .admin-badge {
+    @apply inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium;
+  }
+
+  .stat-card {
+    @apply admin-card flex items-center gap-4 hover:border-border-strong transition-colors;
+  }
+
+  .table-row {
+    @apply border-b border-border hover:bg-background-elevated transition-colors;
+  }
+
+  .skeleton-line {
+    @apply rounded animate-pulse;
+    background: var(--elevated);
+    height: 12px;
+  }
+}
+
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes slideIn { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: translateX(0); } }
+.animate-fade-in  { animation: fadeIn 0.3s ease-out; }
+.animate-slide-in { animation: slideIn 0.3s ease-out; }
+
+/* TipTap editor */
+.ProseMirror {
+  outline: none;
+  min-height: 300px;
+  color: var(--text);
+  line-height: 1.7;
+}
+.ProseMirror p    { margin-bottom: 1rem; }
+.ProseMirror h1   { font-size: 1.8rem; font-weight: 700; margin: 1.5rem 0 0.75rem; }
+.ProseMirror h2   { font-size: 1.5rem; font-weight: 700; margin: 1.25rem 0 0.5rem; }
+.ProseMirror h3   { font-size: 1.25rem; font-weight: 600; margin: 1rem 0 0.5rem; }
+.ProseMirror ul, .ProseMirror ol { padding-left: 1.5rem; margin-bottom: 1rem; }
+.ProseMirror li   { margin-bottom: 0.25rem; }
+.ProseMirror code { background: rgba(59,130,246,0.1); color: #93C5FD; padding: 0.2em 0.5em; border-radius: 4px; font-size: 0.875em; }
+.ProseMirror pre  { background: #0D1117; border: 1px solid var(--border); border-radius: 8px; padding: 1rem; overflow-x: auto; margin: 1rem 0; }
+.ProseMirror pre code { background: none; color: #E2E8F0; padding: 0; }
+.ProseMirror blockquote { border-left: 3px solid var(--primary); padding: 0.5rem 1rem; margin: 1rem 0; color: var(--text-secondary); font-style: italic; }
+.ProseMirror a { color: var(--primary); text-decoration: underline; }
+.ProseMirror img { max-width: 100%; border-radius: 8px; margin: 1rem 0; }
+.ProseMirror p.is-editor-empty:first-child::before { content: attr(data-placeholder); color: var(--text-secondary); pointer-events: none; float: left; height: 0; }

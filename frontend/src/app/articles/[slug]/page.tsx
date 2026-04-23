@@ -1,0 +1,204 @@
+import type { Metadata } from 'next';
+import { notFound } from 'next/navigation';
+import Image from 'next/image';
+import Link from 'next/link';
+import { api } from '@/lib/api';
+import { VoteButtons } from '@/components/post/VoteButtons';
+import { ShareButtons } from '@/components/post/ShareButtons';
+import { TableOfContents } from '@/components/post/TableOfContents';
+import { CommentSection } from '@/components/post/CommentSection';
+import { RelatedPosts } from '@/components/post/RelatedPosts';
+import { AdUnit } from '@/components/ads/AdUnit';
+import { getCategoryClass, formatDate, formatNumber, readingTime } from '@/lib/utils';
+
+interface PageProps {
+  params: Promise<{ slug: string }>;
+}
+
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const { slug } = await params;
+  try {
+    const post    = await api.posts.get(slug);
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://leviai.today';
+    return {
+      title: post.meta_title || post.title,
+      description: post.meta_description || post.snippet || '',
+      openGraph: {
+        title: post.title,
+        description: post.snippet || '',
+        url: `${siteUrl}/articles/${slug}`,
+        type: 'article',
+        images: post.og_image || post.thumbnail ? [{ url: (post.og_image || post.thumbnail)! }] : [],
+        publishedTime: post.published_at,
+        tags: post.tags,
+      },
+    };
+  } catch {
+    return { title: 'Article Not Found' };
+  }
+}
+
+export default async function ArticlePage({ params }: PageProps) {
+  const { slug } = await params;
+  const siteUrl  = process.env.NEXT_PUBLIC_SITE_URL || 'https://leviai.today';
+
+  let post: import('@/types').Post;
+  let related: import('@/types').Post[] = [];
+
+  try {
+    [post, related] = await Promise.all([
+      api.posts.get(slug),
+      api.posts.related(slug).catch(() => [] as import('@/types').Post[]),
+    ]);
+  } catch {
+    notFound();
+  }
+
+  if (post.status !== 'published' || post.type !== 'article') notFound();
+
+  const postUrl = `${siteUrl}/articles/${slug}`;
+  const mins    = post.content ? readingTime(post.content) : 0;
+
+  const schema = {
+    '@context': 'https://schema.org',
+    '@type': 'Article',
+    headline: post.title,
+    description: post.snippet,
+    image: post.thumbnail,
+    datePublished: post.published_at,
+    author: { '@type': 'Organization', name: 'LeviAI Today' },
+    publisher: { '@type': 'Organization', name: 'LeviAI Today', url: siteUrl },
+    url: postUrl,
+    wordCount: post.content?.split(/\s+/).length,
+  };
+
+  return (
+    <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+        <div className="flex gap-8">
+
+          {/* Article content */}
+          <article className="flex-1 min-w-0 max-w-3xl animate-fade-in">
+
+            {/* Breadcrumb */}
+            <nav className="flex items-center gap-2 text-xs text-text-muted mb-6">
+              <Link href="/" className="hover:text-primary transition-colors">Home</Link>
+              <span>/</span>
+              <Link href="/articles" className="hover:text-primary transition-colors">Articles</Link>
+              <span>/</span>
+              <span className="text-text-secondary truncate max-w-[200px]">{post.title}</span>
+            </nav>
+
+            {/* Badges */}
+            <div className="flex items-center gap-2 mb-4">
+              <span className={`badge border text-xs ${getCategoryClass(post.category)}`}>{post.category}</span>
+              <span className="badge bg-accent/20 border border-accent/30 text-accent text-xs">Original Article</span>
+            </div>
+
+            {/* Title */}
+            <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold mb-4 leading-snug">
+              {post.title}
+            </h1>
+
+            {/* Meta row */}
+            <div className="flex flex-wrap items-center gap-4 text-sm text-text-muted mb-6 pb-4 border-b border-border">
+              <div className="flex items-center gap-1.5">
+                <div className="w-6 h-6 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center">
+                  <span className="text-white text-xs font-bold">L</span>
+                </div>
+                <span className="font-medium text-text-secondary">LeviAI Today</span>
+              </div>
+              <span>{formatDate(post.published_at || post.created_at)}</span>
+              {mins > 0 && <span>{mins} min read</span>}
+              <span>{formatNumber(post.view_count)} views</span>
+              <div className="flex items-center gap-1">
+                <VoteButtons postId={post.id} upvotes={post.upvotes} downvotes={post.downvotes} orientation="horizontal" />
+              </div>
+            </div>
+
+            {/* Featured image */}
+            {post.thumbnail && (
+              <div className="relative w-full aspect-video rounded-xl overflow-hidden mb-8 bg-background-elevated">
+                <Image
+                  src={post.thumbnail}
+                  alt={post.title}
+                  fill
+                  className="object-cover"
+                  priority
+                  unoptimized
+                />
+              </div>
+            )}
+
+            {/* Snippet / intro */}
+            {post.snippet && (
+              <p className="text-lg text-text-secondary leading-relaxed mb-8 font-light border-l-4 border-primary pl-4">
+                {post.snippet}
+              </p>
+            )}
+
+            {/* Article body */}
+            {post.content ? (
+              <div
+                className="article-content mb-8"
+                dangerouslySetInnerHTML={{ __html: post.content }}
+              />
+            ) : (
+              <div className="text-text-muted text-center py-10">Article content coming soon…</div>
+            )}
+
+            {/* In-content ad */}
+            <div className="flex justify-center my-8">
+              <AdUnit slot="in-content" />
+            </div>
+
+            {/* Share */}
+            <div className="py-4 border-t border-b border-border mb-6">
+              <ShareButtons title={post.title} url={postUrl} />
+            </div>
+
+            {/* Tags */}
+            {post.tags && post.tags.length > 0 && (
+              <div className="flex flex-wrap gap-2 mb-8">
+                {post.tags.map((tag) => (
+                  <Link
+                    key={tag}
+                    href={`/search?q=${encodeURIComponent(tag)}`}
+                    className="badge border border-border text-text-muted text-xs hover:text-primary hover:border-primary transition-colors"
+                  >
+                    #{tag}
+                  </Link>
+                ))}
+              </div>
+            )}
+
+            {/* Author box */}
+            <div className="card p-5 mb-8 flex items-center gap-4">
+              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center shrink-0">
+                <span className="text-white text-xl font-bold">L</span>
+              </div>
+              <div>
+                <p className="font-semibold">LeviAI Today Editorial</p>
+                <p className="text-text-secondary text-sm">
+                  Expert AI news coverage and original research insights. Follow us for daily updates.
+                </p>
+              </div>
+            </div>
+
+            <RelatedPosts posts={related} />
+            <CommentSection postId={post.id} />
+          </article>
+
+          {/* Sticky TOC sidebar */}
+          {post.content && (
+            <aside className="hidden xl:block w-56 shrink-0">
+              <TableOfContents content={post.content} />
+            </aside>
+          )}
+        </div>
+      </div>
+    </>
+  );
+}
