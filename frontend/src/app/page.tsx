@@ -7,13 +7,18 @@ import { SortTabs } from '@/components/feed/SortTabs';
 import { CategoryFilter } from '@/components/feed/CategoryFilter';
 import { CompanyNewsSection } from '@/components/feed/CompanyNewsSection';
 import { AdUnit } from '@/components/ads/AdUnit';
+import type { Post } from '@/types';
 
-export const dynamic = 'force-dynamic'; // Always fresh — fixes approved posts not showing
+export const dynamic = 'force-dynamic'; // Always fresh
 
 export const metadata: Metadata = {
-  title: 'LeviAI Today — AI News, Research & Insights',
-  description: 'Your daily source for AI news, research papers, product launches, and deep dives. Browse, upvote, and discuss the most important AI stories.',
+  title: 'INSI AI Today — Daily AI News, Research & Insights',
+  description: 'Stay informed on artificial intelligence with INSI AI Today. We curate the most important AI news, research papers, product launches, and funding rounds from 30+ top sources — updated every 2 hours. Breaking news from OpenAI, Google, Anthropic, Meta AI, and more.',
+  alternates: {
+    canonical: process.env.NEXT_PUBLIC_SITE_URL || 'https://insiai.today',
+  },
 };
+
 
 interface HomePageProps {
   searchParams: Promise<{ sort?: string; category?: string; page?: string; company?: string }>;
@@ -22,6 +27,7 @@ interface HomePageProps {
 const COMPANIES_MAP: Record<string, string> = {
   openai: 'OpenAI', google: 'Google AI', anthropic: 'Anthropic',
   meta: 'Meta AI', microsoft: 'Microsoft', nvidia: 'NVIDIA', mistral: 'Mistral',
+  xai: 'xAI (Grok)',
 };
 
 export default async function HomePage({ searchParams }: HomePageProps) {
@@ -31,13 +37,13 @@ export default async function HomePage({ searchParams }: HomePageProps) {
   const page     = parseInt(params?.page || '1');
   const company  = params?.company || '';
 
-  let posts: import('@/types').Post[] = [];
+  let posts: Post[] = [];
   let totalPages = 1;
   let totalCount = 0;
 
   try {
     const queryParams: Record<string, string | number> = {
-      sort, page, limit: 15, status: 'published',
+      sort, page, limit: 20, status: 'published',
     };
     if (category) queryParams.category = category;
     if (company)  queryParams.search = company;
@@ -50,15 +56,26 @@ export default async function HomePage({ searchParams }: HomePageProps) {
     // Show empty state on error
   }
 
-  // Featured post — only on unfiltered "new" page 1
-  const featured = posts.find((p) => p.featured) ||
-    (sort === 'new' && !company && !category && page === 1 ? posts[0] : null);
-  const feed = featured ? posts.filter((p) => p.id !== (featured as typeof posts[0]).id) : posts;
+  // ── Featured post logic ─────────────────────────────────────────────────────
+  // On unfiltered "new" page 1 only: pick the newest explicitly featured post,
+  // or fall back to the very latest post (news OR article) by published_at.
+  const isUnfiltered = !company && !category && page === 1;
+
+  let featured: Post | null = null;
+  if (isUnfiltered && sort === 'new') {
+    // Prefer explicitly flagged featured post first
+    featured = posts.find((p) => p.featured) ?? posts[0] ?? null;
+  }
+
+  // Feed = everything except the featured hero card
+  const feed = featured
+    ? posts.filter((p) => p.id !== featured!.id)
+    : posts;
 
   return (
     <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6">
 
-      {/* ── Hero ───────────────────────────────────────────────── */}
+      {/* ── Hero ──────────────────────────────────────────────────────────── */}
       <div className="mb-5 text-center animate-fade-in">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-semibold mb-3">
           <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse-slow" />
@@ -72,25 +89,25 @@ export default async function HomePage({ searchParams }: HomePageProps) {
         </p>
       </div>
 
-      {/* ── Top Companies Section ──────────────────────────────── */}
+      {/* ── Top Companies Section ──────────────────────────────────────────── */}
       <Suspense fallback={<div className="company-section-skeleton" />}>
         <CompanyNewsSection activeCompany={company} />
       </Suspense>
 
-      {/* ── Featured post (desktop only, unfiltered) ───────────── */}
-      {featured && !company && !category && page === 1 && (
+      {/* ── Featured hero section ────────────────────────────────────────── */}
+      {featured && isUnfiltered && (
         <div className="mb-5 animate-fade-in">
-          <PostCard post={featured as import('@/types').Post} variant="featured" />
+          <PostCard post={featured} variant="featured" />
         </div>
       )}
 
-      {/* ── Main layout ────────────────────────────────────────── */}
+      {/* ── Main layout ───────────────────────────────────────────────────── */}
       <div className="flex flex-col lg:flex-row gap-6">
 
-        {/* Main feed column */}
+        {/* Feed column */}
         <div className="flex-1 min-w-0">
 
-          {/* Controls */}
+          {/* Sort + count row */}
           <div className="flex flex-wrap gap-2 mb-3 items-center justify-between">
             <Suspense fallback={<div className="h-9 w-40 skeleton rounded-lg" />}>
               <SortTabs activeSort={sort} />
@@ -104,13 +121,14 @@ export default async function HomePage({ searchParams }: HomePageProps) {
             )}
           </div>
 
+          {/* Category filter strip */}
           <Suspense fallback={<div className="h-8 skeleton rounded-full w-full mb-4" />}>
             <CategoryFilter activeCategory={category || 'All'} />
           </Suspense>
 
           <div className="mt-4" />
 
-          {/* Feed */}
+          {/* ── Feed ──────────────────────────────────────────────────────── */}
           {posts.length === 0 ? (
             <div className="card p-8 sm:p-12 text-center animate-fade-in">
               <svg className="w-12 h-12 mx-auto text-text-muted mb-4 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -136,6 +154,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
                 <PostCard key={post.id} post={post} index={i} />
               ))}
 
+              {/* In-feed ad after 6th post */}
               {feed.length >= 6 && (
                 <div className="flex justify-center py-2">
                   <AdUnit slot="in-content" />
@@ -170,7 +189,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
           )}
         </div>
 
-        {/* Sidebar — desktop right column, mobile below feed */}
+        {/* Sidebar — desktop right column */}
         <div className="w-full lg:w-72 lg:shrink-0">
           <Suspense fallback={
             <div className="space-y-4">

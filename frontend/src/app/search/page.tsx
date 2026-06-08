@@ -25,11 +25,20 @@ function SearchContent() {
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-10">
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold mb-2">
-          {q ? <>Search results for <span className="gradient-text">"{q}"</span></> : 'Search'}
-        </h1>
-        {searched && <p className="text-text-muted text-sm">{total} result{total !== 1 ? 's' : ''} found</p>}
+      <div className="mb-8 flex items-center gap-3.5 border-b border-border/60 pb-6">
+        <div className="p-2 rounded-xl bg-background-elevated border border-border shadow-sm">
+          <img
+            src="/logo.png"
+            alt="INSI AI Today"
+            className="h-8 w-auto object-contain"
+          />
+        </div>
+        <div>
+          <h1 className="text-2xl font-black tracking-tight text-text-primary">
+            {q ? <>Search results for <span className="gradient-text">"{q}"</span></> : 'Search'}
+          </h1>
+          {searched && <p className="text-text-muted text-sm mt-0.5">{total} result{total !== 1 ? 's' : ''} found</p>}
+        </div>
       </div>
 
       {loading ? (

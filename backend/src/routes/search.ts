@@ -17,7 +17,8 @@ searchRouter.get('/', generalLimiter, async (req: Request, res: Response) => {
   const pageNum  = Math.max(1, parseInt(page as string));
   const limitNum = Math.min(50, parseInt(limit as string));
   const offset   = (pageNum - 1) * limitNum;
-  const query    = (q as string).trim();
+  // Escape SQL LIKE wildcards to prevent pattern injection
+  const query    = (q as string).trim().replace(/%/g, '\\%').replace(/_/g, '\\_');
 
   try {
     const { data, error, count } = await supabase

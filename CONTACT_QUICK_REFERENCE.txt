@@ -1,0 +1,138 @@
+╔════════════════════════════════════════════════════════════╗
+║          CONTACT SYSTEM - QUICK REFERENCE CARD             ║
+╚════════════════════════════════════════════════════════════╝
+
+┌────────────────────────────────────────────────────────────┐
+│ 🚀 STARTUP COMMANDS                                        │
+├────────────────────────────────────────────────────────────┤
+│ Backend:   cd backend && npm run dev                       │
+│ Frontend:  cd frontend && npm run dev                      │
+│ Admin:     cd admin && npm run dev                         │
+└────────────────────────────────────────────────────────────┘
+
+┌────────────────────────────────────────────────────────────┐
+│ 🌐 ACCESS URLS                                             │
+├────────────────────────────────────────────────────────────┤
+│ Contact Form:      http://localhost:3000/contact           │
+│ Admin Dashboard:   http://localhost:3001/contact           │
+│ API Endpoint:      http://localhost:3002/api/contact       │
+│ WhatsApp Group:    https://chat.whatsapp.com/I9km...       │
+└────────────────────────────────────────────────────────────┘
+
+┌────────────────────────────────────────────────────────────┐
+│ 📋 MIGRATION (DO THIS FIRST!)                              │
+├────────────────────────────────────────────────────────────┤
+│ 1. Go to: https://supabase.com/dashboard                  │
+│ 2. Select your project                                     │
+│ 3. Navigate to: SQL Editor                                 │
+│ 4. Copy SQL from: supabase/migrations/                    │
+│                   006_contact_messages.sql                 │
+│ 5. Paste and click "RUN"                                   │
+│ 6. Verify: Table "contact_messages" created               │
+└────────────────────────────────────────────────────────────┘
+
+┌────────────────────────────────────────────────────────────┐
+│ 📊 MESSAGE STATUS CODES                                    │
+├────────────────────────────────────────────────────────────┤
+│ unread    🔵  New message, not viewed yet                  │
+│ read      📖  Viewed but not replied                       │
+│ replied   ✅  Response sent to user                        │
+│ archived  📦  Completed/No action needed                   │
+└────────────────────────────────────────────────────────────┘
+
+┌────────────────────────────────────────────────────────────┐
+│ 🎯 TESTING WORKFLOW                                        │
+├────────────────────────────────────────────────────────────┤
+│ Step 1: Open http://localhost:3000/contact                │
+│ Step 2: Fill form with test data                          │
+│ Step 3: Click "Send Message"                              │
+│ Step 4: Verify success message appears                    │
+│ Step 5: Open http://localhost:3001/contact                │
+│ Step 6: Login to admin panel                              │
+│ Step 7: Verify message appears in dashboard               │
+│ Step 8: Test status update dropdown                       │
+│ Step 9: Test "Reply via Email" button                     │
+│ Step 10: Test message deletion                            │
+└────────────────────────────────────────────────────────────┘
+
+┌────────────────────────────────────────────────────────────┐
+│ 🔧 ADMIN PANEL FEATURES                                    │
+├────────────────────────────────────────────────────────────┤
+│ ✓ View all messages in card layout                        │
+│ ✓ Filter by status (All/Unread/Read/Replied/Archived)     │
+│ ✓ Status counters on filter tabs                          │
+│ ✓ Update status via dropdown                              │
+│ ✓ Reply via email (opens mail client)                     │
+│ ✓ Delete messages with confirmation                       │
+│ ✓ Timestamp display (date + time)                         │
+│ ✓ Responsive design for mobile                            │
+└────────────────────────────────────────────────────────────┘
+
+┌────────────────────────────────────────────────────────────┐
+│ 📝 CONTACT FORM FIELDS                                     │
+├────────────────────────────────────────────────────────────┤
+│ Name:     Text input (required)                            │
+│ Email:    Email input with validation (required)           │
+│ Subject:  Dropdown with 5 options (required)              │
+│           - Story tip or news submission                   │
+│           - Advertising / Partnership                      │
+│           - Press inquiry                                  │
+│           - Technical issue                                │
+│           - Other                                          │
+│ Message:  Textarea, 5 rows (required)                      │
+└────────────────────────────────────────────────────────────┘
+
+┌────────────────────────────────────────────────────────────┐
+│ 🔒 SECURITY FEATURES                                       │
+├────────────────────────────────────────────────────────────┤
+│ ✓ Admin authentication required                           │
+│ ✓ Row-level security (RLS) policies                       │
+│ ✓ Email format validation                                 │
+│ ✓ Input sanitization                                      │
+│ ✓ SQL injection protection                                │
+│ ✓ CORS configuration                                      │
+└────────────────────────────────────────────────────────────┘
+
+┌────────────────────────────────────────────────────────────┐
+│ 🐛 TROUBLESHOOTING                                         │
+├────────────────────────────────────────────────────────────┤
+│ Form not submitting?                                       │
+│ → Check backend is running on port 3002                   │
+│ → Check browser console for errors                        │
+│ → Verify NEXT_PUBLIC_API_URL in .env                      │
+│                                                            │
+│ Messages not appearing in admin?                          │
+│ → Verify migration was applied                            │
+│ → Check admin authentication                              │
+│ → Check browser network tab                               │
+│                                                            │
+│ "Table not found" error?                                  │
+│ → Migration not applied - run SQL migration               │
+│                                                            │
+│ CORS error?                                               │
+│ → Check backend CORS config includes localhost:3000       │
+└────────────────────────────────────────────────────────────┘
+
+┌────────────────────────────────────────────────────────────┐
+│ 📚 DOCUMENTATION FILES                                     │
+├────────────────────────────────────────────────────────────┤
+│ CONTACT_IMPLEMENTATION_SUMMARY.md  - Complete overview    │
+│ CONTACT_SYSTEM_SETUP.md           - Setup instructions    │
+│ CONTACT_VISUAL_GUIDE.md           - Visual diagrams       │
+│ START_CONTACT_SYSTEM.bat          - Windows startup       │
+│ START_CONTACT_SYSTEM.sh           - Linux/Mac startup     │
+└────────────────────────────────────────────────────────────┘
+
+┌────────────────────────────────────────────────────────────┐
+│ 💡 PRO TIPS                                                │
+├────────────────────────────────────────────────────────────┤
+│ • Check "Unread" tab daily for new messages               │
+│ • Use "Reply via Email" for quick responses               │
+│ • Archive old messages to keep dashboard clean            │
+│ • Subject dropdown helps categorize inquiries             │
+│ • Test form regularly to ensure it's working              │
+└────────────────────────────────────────────────────────────┘
+
+╔════════════════════════════════════════════════════════════╗
+║  Created: 2026-06-04 | Ready for Production ✅            ║
+╚════════════════════════════════════════════════════════════╝

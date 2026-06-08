@@ -6,14 +6,16 @@ import { useState, useEffect } from 'react';
 import { signOut } from '@/lib/auth';
 
 const navItems = [
-  { href: '/dashboard',  icon: '📊', label: 'Dashboard' },
-  { href: '/pending',    icon: '⏳', label: 'Pending Queue', badge: true },
-  { href: '/published',  icon: '✅', label: 'Published Posts' },
+  { href: '/dashboard',    icon: '📊', label: 'Dashboard' },
+  { href: '/pending',      icon: '⏳', label: 'Pending Queue',   badge: true },
+  { href: '/published',    icon: '✅', label: 'Published Posts' },
+  { href: '/drafts',       icon: '📝', label: 'Drafts' },
   { href: '/articles/new', icon: '✍️', label: 'New Article' },
-  { href: '/feeds',      icon: '📡', label: 'RSS Feeds' },
-  { href: '/comments',   icon: '💬', label: 'Comments' },
-  { href: '/analytics',  icon: '📈', label: 'Analytics' },
-  { href: '/settings',   icon: '⚙️', label: 'Settings' },
+  { href: '/feeds',        icon: '📡', label: 'RSS Feeds' },
+  { href: '/contact',      icon: '📧', label: 'Contact Messages' },
+  { href: '/comments',     icon: '💬', label: 'Comments' },
+  { href: '/analytics',    icon: '📈', label: 'Analytics' },
+  { href: '/settings',     icon: '⚙️', label: 'Settings' },
 ];
 
 interface AdminSidebarProps {
@@ -41,13 +43,15 @@ export function AdminSidebar({ pendingCount = 0 }: AdminSidebarProps) {
       <aside className={`fixed top-0 left-0 h-screen w-56 flex flex-col border-r border-border bg-background-surface z-50 transform transition-transform duration-300 lg:translate-x-0 ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
       {/* Logo */}
       <div className="p-4 border-b border-border">
-        <Link href="/dashboard" className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-            <span className="text-white font-black text-xs">L</span>
-          </div>
-          <div>
-            <span className="text-sm font-bold text-white">LeviAI</span>
-            <span className="text-xs text-text-secondary ml-1">Admin</span>
+        <Link href="/dashboard" className="flex items-center gap-2.5 group">
+          <img
+            src="/logo.png"
+            alt="INSI AI Today"
+            className="h-8 w-auto object-contain transition-transform group-hover:scale-105"
+          />
+          <div className="flex flex-col">
+            <span className="text-xs font-bold text-white tracking-wider leading-none">INSI AI</span>
+            <span className="text-[10px] text-text-secondary font-medium tracking-widest mt-0.5 leading-none">ADMIN</span>
           </div>
         </Link>
       </div>

@@ -1,11 +1,19 @@
 import rateLimit from 'express-rate-limit';
+import { Request } from 'express';
 
-/** General API rate limiter — 100 req/15min per IP */
+/**
+ * General public API rate limiter — 500 req/15min per IP.
+ * Authenticated admin requests (Bearer token present) are skipped entirely.
+ */
 export const generalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 100,
+  max: 500,
   standardHeaders: true,
   legacyHeaders: false,
+  // Skip rate limiting for authenticated admin requests
+  skip: (req: Request) => {
+    return !!(req.headers.authorization?.startsWith('Bearer '));
+  },
   message: { error: 'Too many requests — please try again later' },
 });
 
@@ -37,4 +45,24 @@ export const newsletterLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: 'Too many subscription attempts' },
+});
+
+/** Contact limiter — 3 submissions per IP per hour */
+export const contactLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 3,
+  keyGenerator: (req) => req.ip + ':contact',
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many contact submissions — please wait before trying again' },
+});
+
+/** Unsubscribe limiter — 5 per IP per hour */
+export const unsubscribeLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 5,
+  keyGenerator: (req) => req.ip + ':unsub',
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many unsubscribe attempts' },
 });

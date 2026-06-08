@@ -71,3 +71,32 @@ export async function uploadImage(buffer: Buffer, originalName: string, mimeType
   const { data } = supabase.storage.from(BUCKET).getPublicUrl(filePath);
   return data.publicUrl;
 }
+
+/**
+ * Optimize a raw file buffer to 1200x630 WebP and upload to Supabase Storage.
+ * Returns the public URL of the uploaded image.
+ */
+export async function uploadThumbnail(buffer: Buffer, postId: string): Promise<string> {
+  const optimized = await sharp(buffer)
+    .resize(1200, 630, {
+      fit: 'cover',
+      position: 'center',
+    })
+    .webp({ quality: 85 })
+    .toBuffer();
+
+  const fileName = `${postId}-${Date.now()}.webp`;
+  const filePath = `thumbnails/${fileName}`;
+
+  const { error } = await supabase.storage
+    .from(BUCKET)
+    .upload(filePath, optimized, {
+      contentType: 'image/webp',
+      upsert: false,
+    });
+
+  if (error) throw error;
+
+  const { data } = supabase.storage.from(BUCKET).getPublicUrl(filePath);
+  return data.publicUrl;
+}

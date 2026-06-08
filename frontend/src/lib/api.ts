@@ -44,6 +44,12 @@ export const api = {
       }).toString();
       return fetchAPI<{ posts: import('@/types').Post[]; pagination: import('@/types').Pagination }>(`/api/posts?${qs}`);
     },
+
+    trackView: (slug: string) =>
+      fetchAPI<{ success: boolean; views: number }>(`/api/posts/${slug}/view`, {
+        method: 'POST',
+        cache: 'no-store',
+      }),
   },
 
   votes: {

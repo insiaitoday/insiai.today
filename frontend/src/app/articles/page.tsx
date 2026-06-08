@@ -7,9 +7,18 @@ import { Sidebar } from '@/components/layout/Sidebar';
 export const dynamic = 'force-dynamic'; // Always fresh data — fixes approved posts not showing
 
 export const metadata: Metadata = {
-  title: 'Articles — LeviAI Today',
-  description: 'Original articles and deep dives on AI news, research, and insights from the LeviAI Today editorial team.',
+  title: 'Original Articles & AI Analysis — INSI AI Today',
+  description: 'Read original long-form articles, analysis, and deep dives on artificial intelligence from the INSI AI Today editorial team. Expert perspectives on the trends shaping the AI industry.',
+  alternates: {
+    canonical: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://insiai.today'}/articles`,
+  },
+  openGraph: {
+    title: 'Original AI Articles & Analysis — INSI AI Today',
+    description: 'In-depth AI analysis and original editorial content from the INSI AI Today team.',
+    images: [{ url: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://insiai.today'}/og-default.png`, width: 1200, height: 630 }],
+  },
 };
+
 
 interface ArticlesPageProps {
   searchParams: Promise<{ page?: string }>;
@@ -37,7 +46,7 @@ export default async function ArticlesPage({ searchParams }: ArticlesPageProps) 
           <span className="gradient-text">Original Articles</span>
         </h1>
         <p className="text-text-secondary max-w-2xl text-sm">
-          In-depth analysis, tutorials, and insights from the LeviAI Today editorial team.
+          In-depth analysis, tutorials, and insights from the INSI AI Today editorial team.
         </p>
       </div>
 

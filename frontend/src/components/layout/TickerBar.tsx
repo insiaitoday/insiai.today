@@ -28,6 +28,8 @@ const SOURCE_COLORS: Record<string, { bg: string; text: string; dot: string }> =
   nvidia:     { bg: '#ECFDF5', text: '#76B900', dot: '#76B900' },
   huggingface:{ bg: '#FEF3C7', text: '#D97706', dot: '#D97706' },
   mistral:    { bg: '#EDE9FE', text: '#7C3AED', dot: '#7C3AED' },
+  xai:        { bg: '#F5F5F5', text: '#111111', dot: '#111111' },
+  grok:       { bg: '#F5F5F5', text: '#111111', dot: '#111111' },
   default:    { bg: '#F3F4F6', text: '#6B7280', dot: '#9CA3AF' },
 };
 
@@ -49,6 +51,8 @@ const COMPANY_ICONS: Record<string, string> = {
   nvidia:     '🚀',
   huggingface:'🤗',
   mistral:    '🌀',
+  xai:        '𝕏',
+  grok:       '𝕏',
   default:    '📡',
 };
 
@@ -68,6 +72,7 @@ const TOP_COMPANIES = [
   { name: 'Meta AI',     key: 'meta',       icon: '🌐' },
   { name: 'Microsoft',   key: 'microsoft',  icon: '💎' },
   { name: 'Mistral',     key: 'mistral',    icon: '🌀' },
+  { name: 'xAI (Grok)',  key: 'xai',        icon: '𝕏' },
 ];
 
 export function TickerBar({ items }: TickerBarProps) {

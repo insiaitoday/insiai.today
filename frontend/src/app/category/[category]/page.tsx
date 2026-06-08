@@ -19,14 +19,43 @@ function formatCategoryName(slug: string): string {
   return slug.split('-').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
 }
 
+const CATEGORY_DESCRIPTIONS: Record<string, string> = {
+  'Breaking News': 'Follow breaking AI news as it happens. Real-time coverage of the most important artificial intelligence developments, announcements, and events from around the world.',
+  'Product Launches': 'Discover the latest AI product launches, model releases, and tool announcements. From ChatGPT updates to new AI APIs — we cover every major release.',
+  'Research Papers': 'Explore the cutting edge of AI research. We curate the most significant machine learning papers, academic breakthroughs, and scientific findings from top AI labs and universities.',
+  'Funding': 'Stay informed on AI startup funding, venture capital investments, acquisitions, and industry financial news. Track where the money is flowing in artificial intelligence.',
+  'Tools': 'Find the best AI tools, developer APIs, open-source libraries, and productivity software. Practical resources for builders, developers, and AI enthusiasts.',
+  'Tutorials': 'Learn AI with step-by-step tutorials, guides, and educational content. From beginner-friendly introductions to advanced machine learning techniques.',
+};
+
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { category } = await params;
   const name = formatCategoryName(category);
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://insiai.today';
+  const description = CATEGORY_DESCRIPTIONS[name] || `Browse the latest ${name.toLowerCase()} AI news, curated from 30+ top sources. Updated every 2 hours with the most important stories.`;
+  const catUrl = `${siteUrl}/category/${category}`;
   return {
-    title: `${name} — AI News`,
-    description: `Browse the latest AI ${name.toLowerCase()} news, curated from top sources.`,
+    title: `${name} — AI News & Updates`,
+    description,
+    alternates: { canonical: catUrl },
+    openGraph: {
+      title: `${name} — AI News | INSI AI Today`,
+      description,
+      url: catUrl,
+      siteName: 'INSI AI Today',
+      images: [{ url: `${siteUrl}/og-default.png`, width: 1200, height: 630, alt: `${name} — INSI AI Today` }],
+      type: 'website',
+    },
+    twitter: {
+      card: 'summary_large_image',
+      site: '@insiai_today',
+      title: `${name} — AI News | INSI AI Today`,
+      description,
+      images: [`${siteUrl}/og-default.png`],
+    },
   };
 }
+
 
 export default async function CategoryPage({ params, searchParams }: PageProps) {
   const { category } = await params;

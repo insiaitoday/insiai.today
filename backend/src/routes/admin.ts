@@ -2,14 +2,72 @@
 import { Router, Request, Response } from 'express';
 import { supabase } from '../lib/supabase';
 import { requireAuth } from '../middleware/auth';
+import multer from 'multer';
+import { v4 as uuidv4 } from 'uuid';
+import { uploadThumbnail } from '../services/imageService';
 
 export const adminRouter = Router();
 adminRouter.use(requireAuth);
 
+// Configure multer for thumbnail uploads
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+  fileFilter: (_req, file, cb) => {
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg'];
+    if (allowedTypes.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only JPEG, PNG, and WebP images are allowed'));
+    }
+  },
+});
+
+// POST /api/admin/upload-thumbnail — upload and optimize thumbnail
+adminRouter.post('/upload-thumbnail', upload.single('file'), async (req: Request, res: Response) => {
+  try {
+    if (!req.file) {
+      res.status(400).json({ error: 'No file uploaded' });
+      return;
+    }
+
+    const postId = req.body.postId || uuidv4();
+    
+    // Upload directly to Supabase Storage
+    const url = await uploadThumbnail(req.file.buffer, postId);
+
+    res.json({ url, success: true });
+  } catch (err) {
+    console.error('Thumbnail upload error:', err);
+    res.status(500).json({ error: 'Failed to upload thumbnail' });
+  }
+});
+
+// GET /api/admin/posts/:id — fetch a single post by UUID (for admin edit page)
+adminRouter.get('/posts/:id', async (req: Request, res: Response) => {
+  const { id } = req.params;
+  try {
+    const { data, error } = await supabase
+      .from('posts')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (error || !data) {
+      res.status(404).json({ error: 'Post not found' });
+      return;
+    }
+    res.json(data);
+  } catch (err) {
+    console.error('GET /admin/posts/:id error:', err);
+    res.status(500).json({ error: 'Failed to fetch post' });
+  }
+});
+
 // POST /api/admin/posts/:id/approve — approve a pending RSS post
 adminRouter.post('/posts/:id/approve', async (req: Request, res: Response) => {
   const { id } = req.params;
-  const { admin_commentary, category, title, snippet } = req.body;
+  const { admin_commentary, category, title, snippet, content, tags, thumbnail } = req.body;
 
   try {
     const updates: Record<string, unknown> = {
@@ -21,6 +79,15 @@ adminRouter.post('/posts/:id/approve', async (req: Request, res: Response) => {
     if (category)  updates.category = category;
     if (title)     updates.title    = title;
     if (snippet)   updates.snippet  = snippet;
+    if (content !== undefined) updates.content = content;
+    if (thumbnail !== undefined) updates.thumbnail = thumbnail;
+    if (tags !== undefined) {
+      updates.tags = Array.isArray(tags)
+        ? tags
+        : typeof tags === 'string'
+          ? tags.split(',').map((t: string) => t.trim()).filter(Boolean)
+          : tags;
+    }
 
     const { data, error } = await supabase
       .from('posts')

@@ -122,6 +122,12 @@ commentsRouter.patch('/comments/:commentId', requireAuth, async (req: Request, r
   const { commentId } = req.params;
   const { status } = req.body;
 
+  // Validate status to prevent invalid DB values
+  if (!['approved', 'pending', 'spam'].includes(status)) {
+    res.status(400).json({ error: 'Invalid status. Must be: approved, pending, or spam' });
+    return;
+  }
+
   try {
     const { data, error } = await supabase
       .from('comments')

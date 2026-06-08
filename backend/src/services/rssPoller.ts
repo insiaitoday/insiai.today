@@ -107,7 +107,8 @@ export async function pollSingleFeed(feed: RssFeed): Promise<number> {
 
   try {
     // Try web scraper first for companies without RSS
-    const scraperCount = await runWebScraper(feed.name, feed.id);
+    // Pass auto_approve so scraped articles respect the feed's publish setting
+    const scraperCount = await runWebScraper(feed.name, feed.id, feed.auto_approve);
     if (scraperCount > 0) {
       await supabase.from('rss_feeds').update({
         last_fetched: new Date().toISOString(),

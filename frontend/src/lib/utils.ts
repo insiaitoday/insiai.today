@@ -29,9 +29,15 @@ export function getCategoryClass(category: string): string {
 
 export function getSourceClass(source: string): string {
   const s = source.toLowerCase();
-  if (s.includes('openai'))   return 'source-openai';
+  if (s.includes('openai'))                           return 'source-openai';
   if (s.includes('google') || s.includes('deepmind')) return 'source-google';
-  if (s.includes('hugging'))  return 'source-hugging';
+  if (s.includes('anthropic'))                        return 'source-anthropic';
+  if (s.includes('meta ai') || s.includes('meta ai')) return 'source-meta';
+  if (s.includes('microsoft'))                        return 'source-microsoft';
+  if (s.includes('nvidia'))                           return 'source-nvidia';
+  if (s.includes('mistral'))                          return 'source-mistral';
+  if (s.includes('xai') || s.includes('grok') || s.includes('x.ai')) return 'source-xai';
+  if (s.includes('hugging'))                          return 'source-hugging';
   return 'source-default';
 }
 

@@ -1,7 +1,11 @@
 /**
  * AdSense ad unit wrapper.
- * Replace data-ad-slot with your actual slot IDs after AdSense approval.
- * Add your Publisher ID to layout.tsx's AdSense script tag.
+ *
+ * HOW TO ACTIVATE:
+ * 1. Get your Publisher ID from Google AdSense (format: ca-pub-XXXXXXXXXXXXXXXX)
+ * 2. Uncomment the AdSense script tag in layout.tsx and add your Publisher ID
+ * 3. Replace SLOT_IDS below with your actual ad slot IDs from AdSense dashboard
+ * 4. Uncomment the <ins> tags in the render function below
  */
 
 interface AdUnitProps {
@@ -9,34 +13,37 @@ interface AdUnitProps {
   className?: string;
 }
 
-const SLOT_CONFIG: Record<AdUnitProps['slot'], { label: string; style: string }> = {
-  'header':     { label: 'Header Ad (728×90)',     style: 'h-24 min-w-[728px]' },
-  'sidebar':    { label: 'Sidebar Ad (300×250)',   style: 'h-[250px] w-[300px]' },
-  'in-content': { label: 'In-Content Ad (336×280)', style: 'h-[280px] w-[336px]' },
-  'footer':     { label: 'Footer Ad (728×90)',     style: 'h-24' },
+const SLOT_IDS: Record<AdUnitProps['slot'], string> = {
+  'header':     'XXXXXXXXXX', // Replace with your Header slot ID
+  'sidebar':    'XXXXXXXXXX', // Replace with your Sidebar slot ID
+  'in-content': 'XXXXXXXXXX', // Replace with your In-Content slot ID
+  'footer':     'XXXXXXXXXX', // Replace with your Footer slot ID
+};
+
+// Size map: width x height for each placement
+const SLOT_SIZES: Record<AdUnitProps['slot'], { w: number; h: number }> = {
+  'header':     { w: 728, h: 90 },
+  'sidebar':    { w: 300, h: 250 },
+  'in-content': { w: 336, h: 280 },
+  'footer':     { w: 728, h: 90 },
 };
 
 export function AdUnit({ slot, className = '' }: AdUnitProps) {
-  const config = SLOT_CONFIG[slot];
+  const size = SLOT_SIZES[slot];
 
   return (
     <div
-      className={`flex items-center justify-center rounded-lg border border-dashed border-border/50 bg-background-elevated/30 text-text-muted text-xs ${config.style} ${className}`}
+      className={className}
+      style={{ minWidth: size.w, minHeight: size.h, display: 'block' }}
       aria-label="Advertisement"
-      role="region"
+      role="complementary"
     >
-      {/* Placeholder — replace with actual AdSense ins tag */}
-      <div className="text-center opacity-40">
-        <div className="text-sm mb-1">Advertisement</div>
-        <div className="text-[10px] mt-0.5">{config.label}</div>
-      </div>
-
-      {/* Actual AdSense code — uncomment after approval:
+      {/* Actual AdSense ins tag — uncomment after AdSense approval and add your IDs:
       <ins
         className="adsbygoogle"
-        style={{ display: 'block' }}
+        style={{ display: 'block', width: size.w, height: size.h }}
         data-ad-client="ca-pub-XXXXXXXXXXXXXXXX"
-        data-ad-slot="XXXXXXXXXX"
+        data-ad-slot={SLOT_IDS[slot]}
         data-ad-format="auto"
         data-full-width-responsive="true"
       />

@@ -10,11 +10,11 @@ export default function SettingsPage() {
   const [ready,   setReady]   = useState(false);
   const [saving,  setSaving]  = useState(false);
   const [form, setForm]       = useState({
-    siteName: 'LeviAI Today',
+    siteName: 'INSI AI Today',
     tagline: 'Your daily source for AI news and insights',
-    adminEmail: 'admin@leviai.today',
-    twitterUrl: '',
-    linkedinUrl: '',
+    adminEmail: 'insiai.today@gmail.com',
+    whatsappUrl: 'https://chat.whatsapp.com/I9km0y6OJSxAW06X72PHbm',
+    linkedinUrl: 'https://www.linkedin.com/company/insiai/',
     adsensePublisherId: '',
     adsenseEnabled: false,
   });
@@ -64,12 +64,12 @@ export default function SettingsPage() {
           <div className="admin-card space-y-4">
             <h2 className="font-semibold text-sm border-b border-border pb-2">📱 Social Media Links</h2>
             <div>
-              <label className="block text-xs font-medium mb-1.5">Twitter / X URL</label>
-              <input type="url" value={form.twitterUrl} onChange={(e) => set('twitterUrl', e.target.value)} placeholder="https://twitter.com/leviai_today" className="admin-input text-sm" />
+              <label className="block text-xs font-medium mb-1.5">WhatsApp Community URL</label>
+              <input type="url" value={form.whatsappUrl} onChange={(e) => set('whatsappUrl', e.target.value)} placeholder="https://chat.whatsapp.com/I9km0y6OJSxAW06X72PHbm" className="admin-input text-sm" />
             </div>
             <div>
               <label className="block text-xs font-medium mb-1.5">LinkedIn URL</label>
-              <input type="url" value={form.linkedinUrl} onChange={(e) => set('linkedinUrl', e.target.value)} placeholder="https://linkedin.com/company/leviai" className="admin-input text-sm" />
+              <input type="url" value={form.linkedinUrl} onChange={(e) => set('linkedinUrl', e.target.value)} placeholder="https://linkedin.com/company/insiai" className="admin-input text-sm" />
             </div>
           </div>
 

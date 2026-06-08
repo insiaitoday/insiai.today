@@ -16,7 +16,6 @@ interface PostCardProps {
 
 export function PostCard({ post, variant = 'default', index = 0 }: PostCardProps) {
   const [showComments, setShowComments] = useState(false);
-  // Delay isNew check to client-only to avoid hydration mismatch
   const [isNew, setIsNew] = useState(false);
   const [mounted, setMounted] = useState(false);
 
@@ -36,6 +35,7 @@ export function PostCard({ post, variant = 'default', index = 0 }: PostCardProps
   const sourceClass = getSourceClass(post.source_name || '');
   const isArticle   = post.type === 'article';
 
+  // ── Compact variant ─────────────────────────────────────────────────────────
   if (variant === 'compact') {
     return (
       <Link href={postUrl} className="flex gap-3 py-3 group">
@@ -64,10 +64,16 @@ export function PostCard({ post, variant = 'default', index = 0 }: PostCardProps
     );
   }
 
+  // ── Featured hero variant ───────────────────────────────────────────────────
   if (variant === 'featured') {
     return (
-      <Link href={postUrl} className="block group relative overflow-hidden rounded-2xl" style={{ animationDelay: `${index * 0.05}s` }}>
-        <div className="aspect-video w-full bg-background-elevated relative">
+      <Link
+        href={postUrl}
+        className="block group relative overflow-hidden rounded-2xl shadow-xl"
+        style={{ animationDelay: `${index * 0.05}s` }}
+      >
+        {/* Image / placeholder */}
+        <div className="aspect-[21/9] sm:aspect-[3/1] md:aspect-[21/8] w-full bg-background-elevated relative z-0">
           {post.thumbnail ? (
             <Image
               src={post.thumbnail}
@@ -78,42 +84,96 @@ export function PostCard({ post, variant = 'default', index = 0 }: PostCardProps
               priority
             />
           ) : (
-            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/10 to-accent/10">
-              <svg className="w-16 h-16 text-text-muted opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/20 to-accent/20">
+              <svg className="w-20 h-20 text-text-muted opacity-20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
               </svg>
             </div>
           )}
         </div>
-        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
-        <div className="absolute bottom-0 left-0 right-0 p-6">
+
+        {/* Dark gradient overlay */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/40 to-transparent pointer-events-none" />
+
+        {/* Top-left: type label */}
+        <div className="absolute top-4 left-4 flex items-center gap-2 z-10">
+          {isArticle ? (
+            <span className="flex items-center gap-1.5 text-xs font-bold px-3 py-1 rounded-full bg-accent text-white shadow-lg">
+              ✍️ Original Article
+            </span>
+          ) : (
+            <span className="flex items-center gap-1.5 text-xs font-bold px-3 py-1 rounded-full bg-primary text-white shadow-lg animate-pulse-slow">
+              📡 Latest News
+            </span>
+          )}
+          {mounted && isNew && (
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-500 text-white shadow">
+              NEW
+            </span>
+          )}
+        </div>
+
+        {/* Bottom content */}
+        <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6 z-10">
+          {/* Category + source */}
           <div className="flex items-center gap-2 mb-2 flex-wrap">
             <span className={`badge border text-xs ${catClass}`}>{post.category}</span>
-            {isArticle && <span className="badge bg-accent/20 border border-accent/30 text-accent text-xs">Original</span>}
-            {/* isNew only shown after mount to avoid hydration */}
-            {mounted && isNew && (
-              <span className="badge text-xs font-bold" style={{ background: '#EF4444', color: '#fff' }}>NEW</span>
+            {!isArticle && post.source_name && (
+              <span className="text-white/60 text-xs">{post.source_name}</span>
             )}
           </div>
-          <h2 className="text-white font-bold text-xl md:text-2xl leading-snug line-clamp-2 group-hover:text-primary/90 transition-colors">
+
+          {/* Title */}
+          <h2 className="text-white font-bold text-lg sm:text-xl md:text-2xl leading-snug line-clamp-2 group-hover:text-primary/90 transition-colors mb-2">
             {post.title}
           </h2>
-          <div className="flex items-center gap-3 mt-2 text-white/60 text-xs flex-wrap">
-            <span>{formatNumber((post.upvotes || 0) - (post.downvotes || 0))} votes</span>
+
+          {/* Snippet — show on md+ */}
+          {post.snippet && (
+            <p className="hidden md:block text-white/60 text-sm line-clamp-1 mb-3">
+              {truncate(post.snippet, 140)}
+            </p>
+          )}
+
+          {/* Meta row */}
+          <div className="flex items-center gap-3 text-white/50 text-xs flex-wrap">
+            <span className="flex items-center gap-1">
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              {timeAgo(post.published_at || post.created_at)}
+            </span>
             <span>•</span>
-            <span>{timeAgo(post.published_at || post.created_at)}</span>
-            {post.source_name && <><span>•</span><span>{post.source_name}</span></>}
+            <span className="flex items-center gap-1">
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+              </svg>
+              {formatNumber((post.upvotes || 0) - (post.downvotes || 0))} votes
+            </span>
+            {post.comment_count ? (
+              <>
+                <span>•</span>
+                <span>💬 {post.comment_count}</span>
+              </>
+            ) : null}
           </div>
+        </div>
+
+        {/* Right arrow CTA */}
+        <div className="absolute bottom-4 right-4 sm:bottom-6 sm:right-6 w-9 h-9 rounded-full bg-white/10 border border-white/20 flex items-center justify-center backdrop-blur-sm group-hover:bg-primary group-hover:border-primary transition-all duration-300 z-10">
+          <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          </svg>
         </div>
       </Link>
     );
   }
 
-  // ── Default card ─────────────────────────────────────────────
+  // ── Default card ─────────────────────────────────────────────────────────────
   return (
     <article
-      className="card animate-slide-up overflow-hidden"
-      style={{ animationDelay: `${index * 0.04}s` }}
+      className={`card overflow-hidden${index < 8 ? ' animate-slide-up' : ''}`}
+      style={index < 8 ? { animationDelay: `${index * 0.04}s` } : undefined}
     >
       <div className="flex">
         {/* Vote sidebar */}
@@ -128,16 +188,16 @@ export function PostCard({ post, variant = 'default', index = 0 }: PostCardProps
           <div className="flex items-center gap-2 mb-2 flex-wrap">
             <span className={`badge border text-[10px] sm:text-xs ${catClass}`}>{post.category}</span>
 
-            {isArticle
-              ? <span className="badge bg-accent/20 border border-accent/30 text-accent text-[10px] sm:text-xs">Original</span>
-              : post.source_name && (
-                  <span className={`text-[10px] sm:text-xs font-medium px-2 py-0.5 rounded-full ${sourceClass}`}>
-                    {post.source_name}
-                  </span>
-                )
-            }
+            {isArticle ? (
+              <span className="badge bg-accent/20 border border-accent/30 text-accent text-[10px] sm:text-xs">
+                ✍️ Original
+              </span>
+            ) : post.source_name ? (
+              <span className={`text-[10px] sm:text-xs font-medium px-2 py-0.5 rounded-full ${sourceClass}`}>
+                {post.source_name}
+              </span>
+            ) : null}
 
-            {/* Only shown client-side to prevent hydration mismatch */}
             {mounted && isNew && (
               <span
                 className="text-[9px] font-bold px-1.5 py-0.5 rounded"
@@ -170,20 +230,27 @@ export function PostCard({ post, variant = 'default', index = 0 }: PostCardProps
           <div className="flex items-center gap-2 sm:gap-3 pt-2 border-t border-border/50 flex-wrap">
             {isArticle ? (
               <Link href={postUrl} className="btn-primary text-xs px-3 py-1.5">
-                Read →
+                Read Article →
               </Link>
             ) : (
-              <a
-                href={post.source_url || postUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="btn-ghost text-xs px-3 py-1.5 flex items-center gap-1"
-              >
-                Read Source
-                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                </svg>
-              </a>
+              <>
+                <Link href={postUrl} className="btn-ghost text-xs px-3 py-1.5">
+                  Full Story
+                </Link>
+                {post.source_url && (
+                  <a
+                    href={post.source_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1 text-xs text-text-muted hover:text-primary transition-colors"
+                  >
+                    Source
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                    </svg>
+                  </a>
+                )}
+              </>
             )}
 
             <button
@@ -213,15 +280,15 @@ export function PostCard({ post, variant = 'default', index = 0 }: PostCardProps
 
         {/* Thumbnail */}
         {post.thumbnail && (
-          <div className="hidden sm:block w-24 md:w-36 shrink-0">
+          <div className="hidden sm:block w-28 md:w-40 shrink-0">
             <Link href={postUrl} className="block h-full" tabIndex={-1} aria-hidden>
-              <div className="h-full min-h-[100px] bg-background-elevated overflow-hidden rounded-r-xl relative">
+              <div className="h-full min-h-[110px] bg-[#F5F6F8] overflow-hidden rounded-r-xl relative flex items-center justify-center">
                 <Image
                   src={post.thumbnail}
                   alt=""
-                  width={144}
-                  height={108}
-                  className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                  width={160}
+                  height={120}
+                  className="w-full h-full object-contain hover:scale-105 transition-transform duration-300"
                   unoptimized
                 />
               </div>

@@ -2,7 +2,7 @@ const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3002';
 
 async function getToken(): Promise<string | null> {
   if (typeof window === 'undefined') return null;
-  const raw = localStorage.getItem('leviai_admin_session');
+  const raw = localStorage.getItem('insiai_admin_session');
   if (!raw) return null;
   try {
     const session = JSON.parse(raw);
@@ -46,7 +46,8 @@ export const adminApi = {
       const qs = new URLSearchParams(Object.entries(params).map(([k, v]) => [k, String(v)])).toString();
       return adminFetch<{ posts: import('@/types').Post[]; pagination: { total: number; totalPages: number } }>(`/api/posts?${qs}`);
     },
-    get:    (slug: string) => adminFetch<import('@/types').Post>(`/api/posts/${slug}`),
+    get:       (slug: string) => adminFetch<import('@/types').Post>(`/api/posts/${slug}`),
+    getById:   (id: string)   => adminFetch<import('@/types').Post>(`/api/admin/posts/${id}`),
     create: (data: Partial<import('@/types').Post>) => adminFetch<import('@/types').Post>('/api/posts', { method: 'POST', body: JSON.stringify(data) }),
     update: (id: string, data: Partial<import('@/types').Post>) => adminFetch<import('@/types').Post>(`/api/posts/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
     delete: (id: string) => adminFetch<{ success: boolean }>(`/api/posts/${id}`, { method: 'DELETE' }),
@@ -70,6 +71,20 @@ export const adminApi = {
     recent:  (id: string) => adminFetch<{ articles: any[]; count: number }>(`/api/rss/feeds/${id}/recent`),
   },
 
+  // RSS Auto-Poller
+  poller: {
+    status: () => adminFetch<{
+      running: boolean;
+      startedAt: string | null;
+      lastPollAt: string | null;
+      nextPollAt: string | null;
+      intervalMs: number;
+      totalRuns: number;
+    }>('/api/rss/poller/status'),
+    start: () => adminFetch<{ ok: boolean; message: string; status: object }>('/api/rss/poller/start', { method: 'POST' }),
+    stop:  () => adminFetch<{ ok: boolean; message: string; status: object }>('/api/rss/poller/stop',  { method: 'POST' }),
+  },
+
   // Comments
   comments: {
     list:    (params: Record<string, string>) => {
@@ -83,8 +98,15 @@ export const adminApi = {
 
   // Analytics
   analytics: {
-    summary:  () => adminFetch<Array<{ date: string; views: number; upvotes: number }>>('/api/analytics/summary'),
+    summary:  () => adminFetch<Array<{ date: string; views: number; upvotes: number; comments?: number }>>('/api/analytics/summary'),
     topPosts: () => adminFetch<import('@/types').Post[]>('/api/analytics/top-posts'),
+    totals:   () => adminFetch<{
+      totalViews: number;
+      totalUpvotes: number;
+      totalDownvotes: number;
+      totalComments: number;
+      publishedPosts: number;
+    }>('/api/analytics/totals'),
   },
 
   // Upload

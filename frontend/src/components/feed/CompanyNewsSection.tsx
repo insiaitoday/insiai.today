@@ -118,6 +118,15 @@ const COMPANIES = [
     borderColor: '#86EFAC',
     description: 'GPU, CUDA & AI chips',
   },
+  {
+    name: 'xAI (Grok)',
+    key_: 'xai',
+    icon: '𝕏',
+    color: '#111111',
+    bgColor: '#F5F5F5',
+    borderColor: '#D4D4D4',
+    description: 'Grok AI & research',
+  },
 ];
 
 interface CompanyNewsSectionProps {

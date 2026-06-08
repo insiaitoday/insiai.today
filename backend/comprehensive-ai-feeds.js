@@ -87,7 +87,7 @@ const comprehensiveFeeds = [
   },
   {
     name: 'xAI (Grok)',
-    url: 'https://x.ai/blog/rss',
+    url: 'https://x.ai/news',
     auto_approve: false,
     priority_tier: 1,
     fetch_frequency: 60,

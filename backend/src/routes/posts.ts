@@ -10,6 +10,9 @@ import { generalLimiter } from '../middleware/rateLimit';
 
 export const postsRouter = Router();
 
+// Import advanced view tracker
+import { viewTracker } from '../services/viewTracker';
+
 // GET /api/posts — paginated feed
 postsRouter.get('/', generalLimiter, async (req: Request, res: Response) => {
   const {
@@ -26,7 +29,7 @@ postsRouter.get('/', generalLimiter, async (req: Request, res: Response) => {
   } = req.query;
 
   const pageNum  = Math.max(1, parseInt(page as string));
-  const limitNum = Math.min(50, parseInt(limit as string));
+  const limitNum = Math.min(500, parseInt(limit as string));
   const offset   = (pageNum - 1) * limitNum;
 
   try {
@@ -60,13 +63,16 @@ postsRouter.get('/', generalLimiter, async (req: Request, res: Response) => {
       query = query.or(`title.ilike.%${safeSearch}%,snippet.ilike.%${safeSearch}%,source_name.ilike.%${safeSearch}%`);
     }
 
-    // Sorting
-    if (sort === 'new')  query = query.order('created_at', { ascending: false });
-    if (sort === 'old')  query = query.order('created_at', { ascending: true });
+    // Pending posts have null published_at — sort by created_at for those
+    const statuses = (status as string).split(',').map(s => s.trim());
+    const isPendingOnly = statuses.length === 1 && statuses[0] === 'pending';
+    const dateCol = isPendingOnly ? 'created_at' : 'published_at';
+
+    if (sort === 'new')  query = query.order(dateCol, { ascending: false, nullsFirst: false });
+    if (sort === 'old')  query = query.order(dateCol, { ascending: true,  nullsFirst: false });
     if (sort === 'top')  query = query.order('upvotes', { ascending: false });
     if (sort === 'hot') {
-      // Hot = upvotes weighted by recency (last 48hrs bonus)
-      query = query.order('upvotes', { ascending: false }).order('published_at', { ascending: false });
+      query = query.order('upvotes', { ascending: false }).order(dateCol, { ascending: false });
     }
 
     query = query.range(offset, offset + limitNum - 1);
@@ -95,7 +101,7 @@ postsRouter.get('/', generalLimiter, async (req: Request, res: Response) => {
   }
 });
 
-// GET /api/posts/:slug — single post + view count increment
+// GET /api/posts/:slug — single post (NO automatic view increment)
 postsRouter.get('/:slug', generalLimiter, async (req: Request, res: Response) => {
   const { slug } = req.params;
 
@@ -111,13 +117,6 @@ postsRouter.get('/:slug', generalLimiter, async (req: Request, res: Response) =>
       return;
     }
 
-    // Increment view count (fire and forget)
-    supabase
-      .from('posts')
-      .update({ view_count: data.view_count + 1 })
-      .eq('id', data.id)
-      .then(() => {});
-
     const comment_count = data.comments?.[0]?.count || 0;
     delete data.comments;
 
@@ -125,6 +124,119 @@ postsRouter.get('/:slug', generalLimiter, async (req: Request, res: Response) =>
   } catch (err) {
     console.error('GET /posts/:slug error:', err);
     res.status(500).json({ error: 'Failed to fetch post' });
+  }
+});
+
+// POST /api/posts/:slug/view — explicit view tracking with deduplication
+postsRouter.post('/:slug/view', generalLimiter, async (req: Request, res: Response) => {
+  const { slug } = req.params;
+  const { sessionId: rawSessionId, userId, fingerprint } = req.body || {};
+
+  // Auto-generate sessionId if the client didn't send one (backward compat)
+  const sessionId: string = (typeof rawSessionId === 'string' && rawSessionId.trim())
+    ? rawSessionId.trim()
+    : `auto-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+
+  try {
+    // Get the post
+    const { data: post, error: fetchError } = await supabase
+      .from('posts')
+      .select('id, view_count')
+      .eq('slug', slug)
+      .single();
+
+    if (fetchError || !post) {
+      res.status(404).json({ error: 'Post not found' });
+      return;
+    }
+
+    // Get client IP — normalise localhost variants to a single value
+    const rawIp = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() ||
+                  req.socket.remoteAddress ||
+                  req.ip ||
+                  'unknown';
+
+    // Treat all localhost IPs the same (::1 / 127.0.0.1 / ::ffff:127.0.0.1)
+    const isLocalhost = rawIp === '::1' || rawIp.startsWith('127.') || rawIp.startsWith('::ffff:127.');
+    // Use fingerprint as the dedup key for localhost; fall back to IP for production
+    const ipAddress = isLocalhost
+      ? (fingerprint ? `local:${fingerprint}` : `local:${sessionId}`)
+      : rawIp;
+
+    const userAgent = req.headers['user-agent'];
+
+    // Check if this view should be counted using advanced tracker
+    const shouldCount = viewTracker.shouldCountView(
+      post.id,
+      sessionId,
+      ipAddress,
+      userId,
+      fingerprint
+    );
+
+    if (!shouldCount) {
+      res.json({
+        success: true,
+        counted: false,
+        view_count: post.view_count,
+        message: 'View already counted recently',
+      });
+      return;
+    }
+
+    // Record the view in the in-memory tracker
+    viewTracker.recordView(post.id, sessionId, ipAddress, userAgent, userId, fingerprint);
+
+    // Atomically increment view count in database using RPC
+    const { data: updatedPost, error: updateError } = await supabase
+      .from('posts')
+      .update({ view_count: (post.view_count || 0) + 1 })
+      .eq('id', post.id)
+      .select('view_count')
+      .single();
+
+    if (updateError) throw updateError;
+
+    const newViewCount = updatedPost?.view_count ?? (post.view_count || 0) + 1;
+
+    // Upsert into analytics table for daily tracking
+    const today = new Date().toISOString().split('T')[0];
+
+    const { data: existingAnalytics } = await supabase
+      .from('analytics')
+      .select('id, views')
+      .eq('post_id', post.id)
+      .eq('date', today)
+      .maybeSingle();
+
+    if (existingAnalytics) {
+      await supabase
+        .from('analytics')
+        .update({ views: (existingAnalytics.views || 0) + 1 })
+        .eq('id', existingAnalytics.id);
+    } else {
+      await supabase
+        .from('analytics')
+        .insert({
+          post_id: post.id,
+          date: today,
+          views: 1,
+          upvotes: 0,
+          downvotes: 0,
+          comments: 0,
+        });
+    }
+
+    console.log(`✅ View counted — post: ${slug} | session: ${sessionId.slice(0, 8)}... | total: ${newViewCount}`);
+
+    res.json({
+      success: true,
+      counted: true,
+      view_count: newViewCount,
+    });
+  } catch (err) {
+    console.error('POST /posts/:slug/view error:', err);
+    res.status(500).json({ error: 'Failed to track view' });
   }
 });
 
@@ -186,6 +298,25 @@ postsRouter.patch('/:id', requireAuth, async (req: Request, res: Response) => {
   }
 
   try {
+    // Check if content has changed significantly (title or content changed)
+    const { data: existingPost } = await supabase
+      .from('posts')
+      .select('title, content, status')
+      .eq('id', id)
+      .single();
+
+    const contentChanged = existingPost && (
+      (updates.title && updates.title !== existingPost.title) ||
+      (updates.content && updates.content !== existingPost.content)
+    );
+
+    // If content changed significantly and post is being republished, reset view tracking cache
+    if (contentChanged && updates.status === 'published') {
+      console.log(`📝 Content updated for post ${id}, resetting in-memory view tracker`);
+      viewTracker.resetPostViews(id);
+      // NOTE: We do NOT reset view_count in DB — accumulated views are preserved
+    }
+
     const { data, error } = await supabase
       .from('posts')
       .update(updates)

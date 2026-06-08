@@ -3,6 +3,7 @@ import { Router, Request, Response } from 'express';
 import { supabase } from '../lib/supabase';
 import { requireAuth } from '../middleware/auth';
 import { pollSingleFeed } from '../services/rssPoller';
+import { startPoller, stopPoller, getPollerStatus } from '../services/cronJobs';
 
 export const rssRouter = Router();
 
@@ -148,3 +149,28 @@ rssRouter.post('/fetch-all', requireAuth, async (_req: Request, res: Response) =
     res.status(500).json({ error: 'Failed to fetch all feeds' });
   }
 });
+
+// ── Auto-Poller Control (admin only) ──────────────────────────────────────────
+
+// GET /api/rss/poller/status — get current poller state
+rssRouter.get('/poller/status', requireAuth, (_req: Request, res: Response) => {
+  res.json(getPollerStatus());
+});
+
+// POST /api/rss/poller/start — start the 2-hour auto-poller
+rssRouter.post('/poller/start', requireAuth, async (_req: Request, res: Response) => {
+  try {
+    const result = await startPoller();
+    res.json({ ...result, status: getPollerStatus() });
+  } catch (err) {
+    console.error('Poller start error:', err);
+    res.status(500).json({ error: 'Failed to start poller' });
+  }
+});
+
+// POST /api/rss/poller/stop — stop the auto-poller
+rssRouter.post('/poller/stop', requireAuth, (_req: Request, res: Response) => {
+  const result = stopPoller();
+  res.json({ ...result, status: getPollerStatus() });
+});
+

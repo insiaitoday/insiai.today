@@ -17,6 +17,7 @@ import { analyticsRouter } from './routes/analytics';
 import { searchRouter } from './routes/search';
 import { uploadRouter } from './routes/upload';
 import { whatsappRouter } from './routes/whatsapp';
+import { contactRouter } from './routes/contact';
 import { startCronJobs } from './services/cronJobs';
 
 dotenv.config();
@@ -54,6 +55,9 @@ app.use(cors({
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
+// ── Static files for uploads ─────────────────────────────────
+app.use('/uploads', express.static('public/uploads'));
+
 // ── Routes ───────────────────────────────────────────────────
 app.use('/api/posts',      postsRouter);
 app.use('/api/posts',      votesRouter);
@@ -65,12 +69,13 @@ app.use('/api/analytics',  analyticsRouter);
 app.use('/api/search',     searchRouter);
 app.use('/api/upload',     uploadRouter);
 app.use('/api/whatsapp',   whatsappRouter);
+app.use('/api/contact',    contactRouter);
 
 // ── Health check ─────────────────────────────────────────────
 app.get('/health', (_req, res) => {
   res.json({
     status: 'ok',
-    service: 'leviai-backend',
+    service: 'insiai-backend',
     timestamp: new Date().toISOString(),
     env: process.env.NODE_ENV,
   });
@@ -89,7 +94,7 @@ app.use((err: Error, _req: express.Request, res: express.Response, _next: expres
 
 // ── Start server + cron jobs ──────────────────────────────────
 app.listen(PORT, () => {
-  console.log(`🚀 LeviAI Backend running on http://localhost:${PORT}`);
+  console.log(`🚀 INSI Backend running on http://localhost:${PORT}`);
   console.log(`📋 Health check: http://localhost:${PORT}/health`);
   startCronJobs();
 });

@@ -140,7 +140,8 @@ async function saveArticles(
   articles: ScrapedArticle[],
   sourceName: string,
   feedId: string | null,
-  category: string
+  category: string,
+  autoApprove: boolean = false
 ): Promise<number> {
   let saved = 0;
 
@@ -167,7 +168,11 @@ async function saveArticles(
         try { thumbnail = await downloadAndUploadThumbnail(thumbnail, slug); } catch { /* keep */ }
       }
 
+      // Respect feed's auto_approve setting — only publish directly if explicitly enabled
+      const status = autoApprove ? 'published' : 'pending';
       const now = new Date().toISOString();
+      const published_at = autoApprove ? now : undefined;
+
       await supabase.from('posts').insert({
         type: 'rss',
         title: article.title,
@@ -177,8 +182,9 @@ async function saveArticles(
         source_name: sourceName,
         thumbnail,
         category,
-        status: 'pending',
+        status,
         feed_id: feedId,
+        published_at,
         created_at: article.pubDate?.toISOString() || now,
         fetched_at: now,
       });
@@ -205,6 +211,7 @@ async function sitemapScraper(
     feedId: string | null;
     category: string;
     maxAgeDays?: number;
+    autoApprove?: boolean;
   }
 ): Promise<number> {
   const entries = await parseSitemap(config.sitemapUrl, config.pathFilter);
@@ -236,13 +243,13 @@ async function sitemapScraper(
     });
   }
 
-  const saved = await saveArticles(articles, config.sourceName, config.feedId, config.category);
+  const saved = await saveArticles(articles, config.sourceName, config.feedId, config.category, config.autoApprove);
   return saved;
 }
 
 // ─── Company Scrapers ─────────────────────────────────────────────────────────
 
-export async function scrapeAnthropicNews(feedId?: string): Promise<number> {
+export async function scrapeAnthropicNews(feedId?: string, autoApprove?: boolean): Promise<number> {
   const count = await sitemapScraper({
     sitemapUrl: 'https://www.anthropic.com/sitemap.xml',
     pathFilter: '/news/',
@@ -250,12 +257,13 @@ export async function scrapeAnthropicNews(feedId?: string): Promise<number> {
     feedId: feedId || null,
     category: 'Product Launch',
     maxAgeDays: 30,
+    autoApprove,
   });
   console.log(`  ✅ Anthropic (sitemap): +${count} articles`);
   return count;
 }
 
-export async function scrapeOpenAINews(feedId?: string): Promise<number> {
+export async function scrapeOpenAINews(feedId?: string, autoApprove?: boolean): Promise<number> {
   // OpenAI has a sitemap index — try research and product sub-sitemaps
   let total = 0;
 
@@ -267,6 +275,7 @@ export async function scrapeOpenAINews(feedId?: string): Promise<number> {
       feedId: feedId || null,
       category: 'Product Launch',
       maxAgeDays: 30,
+      autoApprove,
     });
     total += count;
   }
@@ -275,7 +284,7 @@ export async function scrapeOpenAINews(feedId?: string): Promise<number> {
   return total;
 }
 
-export async function scrapeDeepMindNews(feedId?: string): Promise<number> {
+export async function scrapeDeepMindNews(feedId?: string, autoApprove?: boolean): Promise<number> {
   const count = await sitemapScraper({
     sitemapUrl: 'https://deepmind.google/sitemap.xml',
     pathFilter: '/discover/blog/',
@@ -283,12 +292,13 @@ export async function scrapeDeepMindNews(feedId?: string): Promise<number> {
     feedId: feedId || null,
     category: 'Research',
     maxAgeDays: 30,
+    autoApprove,
   });
   console.log(`  ✅ Google DeepMind (sitemap): +${count} articles`);
   return count;
 }
 
-export async function scrapeMetaAINews(feedId?: string): Promise<number> {
+export async function scrapeMetaAINews(feedId?: string, autoApprove?: boolean): Promise<number> {
   // Meta AI blog uses engineering.fb.com which has an RSS feed now
   // The scraper is kept as backup but RSS handles this feed
   const count = await sitemapScraper({
@@ -298,12 +308,13 @@ export async function scrapeMetaAINews(feedId?: string): Promise<number> {
     feedId: feedId || null,
     category: 'Research',
     maxAgeDays: 30,
+    autoApprove,
   });
   console.log(`  ✅ Meta AI (sitemap): +${count} articles`);
   return count;
 }
 
-export async function scrapeMistralNews(feedId?: string): Promise<number> {
+export async function scrapeMistralNews(feedId?: string, autoApprove?: boolean): Promise<number> {
   const count = await sitemapScraper({
     sitemapUrl: 'https://mistral.ai/sitemap.xml',
     pathFilter: '/news/',
@@ -311,12 +322,13 @@ export async function scrapeMistralNews(feedId?: string): Promise<number> {
     feedId: feedId || null,
     category: 'Product Launch',
     maxAgeDays: 30, // slightly longer for Mistral which posts less frequently
+    autoApprove,
   });
   console.log(`  ✅ Mistral AI (sitemap): +${count} articles`);
   return count;
 }
 
-export async function scrapeCohereNews(feedId?: string): Promise<number> {
+export async function scrapeCohereNews(feedId?: string, autoApprove?: boolean): Promise<number> {
   const count = await sitemapScraper({
     sitemapUrl: 'https://cohere.com/sitemap.xml',
     pathFilter: '/blog/',
@@ -324,12 +336,108 @@ export async function scrapeCohereNews(feedId?: string): Promise<number> {
     feedId: feedId || null,
     category: 'Product Launch',
     maxAgeDays: 30,
+    autoApprove,
   });
   console.log(`  ✅ Cohere (sitemap): +${count} articles`);
   return count;
 }
 
-export async function scrapeStabilityAINews(feedId?: string): Promise<number> {
+export async function scrapeXAINews(feedId?: string, autoApprove?: boolean): Promise<number> {
+  // x.ai/news blocks all server-side HTTP requests with 403 (Cloudflare protection).
+  // Solution: Use Google News RSS (site:x.ai/news) to get recent articles, and
+  // fall back to Google News redirect links (which resolve in user browser) or
+  // decode direct base64 links if possible.
+  const url = 'https://news.google.com/rss/search?q=site:x.ai/news&hl=en-US&gl=US&ceid=US:en';
+  
+  const headers = {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
+    'Accept': 'application/rss+xml, application/xml, text/xml, */*',
+    'Accept-Language': 'en-US,en;q=0.9',
+  };
+
+  try {
+    const res = await fetch(url, { headers, signal: AbortSignal.timeout(15000) });
+    if (!res.ok) {
+      console.log(`  ⚠️  xAI (Grok): Google News RSS returned status ${res.status}`);
+      return 0;
+    }
+    const xml = await res.text();
+    const $ = cheerio.load(xml, { xmlMode: true });
+
+    const articles: ScrapedArticle[] = [];
+    const cutoff = Date.now() - MAX_AGE_DAYS * 24 * 60 * 60 * 1000;
+
+    $('item').each(function () {
+      const rawTitle = $(this).find('title').text().trim();
+      // Clean title: remove " - xAI" or " - x.ai" suffix
+      const title = rawTitle.replace(/\s*[-—–]\s*x\.?ai\s*$/i, '').trim();
+
+      const link = $(this).find('link').text().trim() || $(this).find('guid').text().trim();
+      const pubDateStr = $(this).find('pubDate').text().trim();
+      const pubDate = pubDateStr ? new Date(pubDateStr) : new Date();
+
+      // Skip if older than MAX_AGE_DAYS
+      if (pubDate && pubDate.getTime() < cutoff) return;
+
+      // Clean snippet from RSS description
+      let snippet = $(this).find('description').text()
+        .replace(/<[^>]+>/g, '') // Strip HTML tags
+        .replace(/&nbsp;/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+      
+      if (snippet.endsWith(' xAI')) {
+        snippet = snippet.substring(0, snippet.length - 4).trim();
+      }
+
+      // Try decoding the Google News redirect URL to direct x.ai URL if classic format
+      let decodedUrl = link;
+      try {
+        const match = link.match(/\/articles\/([A-Za-z0-9+/=-]+)/);
+        if (match) {
+          const b64 = match[1];
+          const buf = Buffer.from(b64, 'base64');
+          const str = buf.toString('utf8');
+          const httpIndex = str.indexOf('http');
+          if (httpIndex !== -1) {
+            const urlPart = str.substring(httpIndex);
+            const urlMatch = urlPart.match(/https?:\/\/[^\s\u0000-\u001F\u007F-\u009F"']+/);
+            if (urlMatch) {
+              decodedUrl = urlMatch[0];
+            }
+          }
+        }
+      } catch {
+        // Keep original link
+      }
+
+      // A beautiful dark abstract tech image for premium look
+      const thumbnail = 'https://images.unsplash.com/photo-1620712943543-bcc4688e7485?w=800&q=80';
+
+      articles.push({
+        title,
+        url: decodedUrl,
+        snippet: snippet.substring(0, 300),
+        thumbnail,
+        pubDate,
+      });
+    });
+
+    if (articles.length === 0) {
+      console.log('  ⚠️  xAI (Grok): No recent articles found in RSS feed');
+      return 0;
+    }
+
+    const saved = await saveArticles(articles, 'xAI (Grok)', feedId || null, 'Product Launch', autoApprove);
+    console.log(`  ✅ xAI (Grok) (RSS feed scraper): +${saved} articles`);
+    return saved;
+  } catch (err) {
+    console.log('  ⚠️  xAI (Grok) scraper error:', (err as Error).message);
+    return 0;
+  }
+}
+
+export async function scrapeStabilityAINews(feedId?: string, autoApprove?: boolean): Promise<number> {
   // Try sitemap first, fall back to page scraping
   let count = await sitemapScraper({
     sitemapUrl: 'https://stability.ai/sitemap.xml',
@@ -338,6 +446,7 @@ export async function scrapeStabilityAINews(feedId?: string): Promise<number> {
     feedId: feedId || null,
     category: 'Product Launch',
     maxAgeDays: 30,
+    autoApprove,
   });
 
   if (count === 0) {
@@ -359,7 +468,7 @@ export async function scrapeStabilityAINews(feedId?: string): Promise<number> {
         if (title.length >= 15) articles.push({ title, url: full, snippet: '' });
       });
 
-      count = await saveArticles(articles, 'Stability AI', feedId || null, 'Product Launch');
+      count = await saveArticles(articles, 'Stability AI', feedId || null, 'Product Launch', autoApprove);
     }
   }
 
@@ -369,15 +478,17 @@ export async function scrapeStabilityAINews(feedId?: string): Promise<number> {
 
 /**
  * Main router — returns 0 if no matching scraper (RSS poller handles it)
+ * autoApprove: when true, articles go directly to 'published'; otherwise stay 'pending'
  */
-export async function runWebScraper(feedName: string, feedId?: string): Promise<number> {
+export async function runWebScraper(feedName: string, feedId?: string, autoApprove?: boolean): Promise<number> {
   const n = feedName.toLowerCase();
-  if (n.includes('anthropic'))  return scrapeAnthropicNews(feedId);
-  if (n.includes('openai'))     return scrapeOpenAINews(feedId);
-  if (n.includes('deepmind'))   return scrapeDeepMindNews(feedId);
-  if (n.includes('meta ai'))    return scrapeMetaAINews(feedId);
-  if (n.includes('mistral'))    return scrapeMistralNews(feedId);
-  if (n.includes('cohere'))     return scrapeCohereNews(feedId);
-  if (n.includes('stability'))  return scrapeStabilityAINews(feedId);
+  if (n.includes('anthropic'))  return scrapeAnthropicNews(feedId, autoApprove);
+  if (n.includes('openai'))     return scrapeOpenAINews(feedId, autoApprove);
+  if (n.includes('deepmind'))   return scrapeDeepMindNews(feedId, autoApprove);
+  if (n.includes('meta ai'))    return scrapeMetaAINews(feedId, autoApprove);
+  if (n.includes('mistral'))    return scrapeMistralNews(feedId, autoApprove);
+  if (n.includes('cohere'))     return scrapeCohereNews(feedId, autoApprove);
+  if (n.includes('stability'))  return scrapeStabilityAINews(feedId, autoApprove);
+  if (n.includes('xai') || n.includes('grok') || n.includes('x.ai')) return scrapeXAINews(feedId, autoApprove);
   return 0;
 }

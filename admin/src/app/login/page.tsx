@@ -35,12 +35,13 @@ export default function LoginPage() {
       </div>
 
       <div className="relative w-full max-w-sm">
-        {/* Logo */}
         <div className="text-center mb-8">
-          <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-lg">
-            <span className="text-white font-black text-2xl">L</span>
-          </div>
-          <h1 className="text-2xl font-bold mb-1">LeviAI Admin</h1>
+          <img
+            src="/logo.png"
+            alt="INSI AI Today"
+            className="h-16 w-auto mx-auto mb-4 object-contain"
+          />
+          <h1 className="text-2xl font-bold mb-1">INSI AI Admin</h1>
           <p className="text-text-secondary text-sm">Sign in to manage your platform</p>
         </div>
 
@@ -54,7 +55,7 @@ export default function LoginPage() {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="admin@leviai.today"
+                placeholder="insiai.today@gmail.com"
                 className="admin-input"
                 autoComplete="email"
                 required
@@ -100,14 +101,14 @@ export default function LoginPage() {
           <div className="mt-4 pt-4 border-t border-border text-center">
             <p className="text-xs text-text-secondary">
               Admin access only. Forgot password?{' '}
-              <a href="mailto:admin@leviai.today" className="text-primary hover:underline">Contact support</a>
+              <a href="mailto:insiai.today@gmail.com" className="text-primary hover:underline">Contact support</a>
             </p>
           </div>
         </div>
 
         <p className="text-center text-xs text-text-muted mt-6">
           <a href={process.env.NEXT_PUBLIC_FRONTEND_URL || 'http://localhost:3000'} className="hover:text-text-secondary transition-colors">
-            ← Back to LeviAI Today
+            ← Back to INSI AI Today
           </a>
         </p>
       </div>
