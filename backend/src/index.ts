@@ -30,33 +30,56 @@ app.use(helmet({
   crossOriginResourcePolicy: { policy: 'cross-origin' },
 }));
 
+// ── Allowed origins (hardcoded + env) ───────────────────────
+const ALLOWED_ORIGINS: (string | RegExp)[] = [
+  // Production — main domains
+  'https://insiaitoday.com',
+  'https://www.insiaitoday.com',
+  'https://insiai.today',
+  'https://www.insiai.today',
+  'https://admin.insiai.today',
+  // Vercel preview deployments (*.vercel.app)
+  /^https:\/\/insiai[-a-z0-9]*\.vercel\.app$/,
+  /^https:\/\/insiai-today[-a-z0-9]*\.vercel\.app$/,
+  // Local development
+  'http://localhost:3000',
+  'http://localhost:3001',
+  'http://localhost:3002',
+];
+
+function isOriginAllowed(origin: string): boolean {
+  // Also check env-based URLs (set in Render dashboard)
+  const envOrigins = [
+    process.env.FRONTEND_URL,
+    process.env.ADMIN_URL,
+  ].filter(Boolean) as string[];
+
+  for (const allowed of [...ALLOWED_ORIGINS, ...envOrigins]) {
+    if (typeof allowed === 'string' && allowed === origin) return true;
+    if (allowed instanceof RegExp && allowed.test(origin)) return true;
+  }
+  return false;
+}
+
 app.use(cors({
   origin: function (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) {
-    if (!origin || process.env.NODE_ENV === 'development') {
+    // Allow requests with no origin (server-to-server, mobile apps, curl)
+    if (!origin) return callback(null, true);
+
+    if (isOriginAllowed(origin)) {
       return callback(null, true);
     }
-    const targetOrigin = [
-      process.env.FRONTEND_URL,
-      process.env.ADMIN_URL,
-      // Production domains
-      'https://insiaitoday.com',
-      'https://www.insiaitoday.com',
-      'https://insiai.today',
-      'https://www.insiai.today',
-      'https://admin.insiai.today',
-      // Local dev
-      'http://localhost:3000',
-      'http://localhost:3001',
-    ];
-    if (targetOrigin.includes(origin)) {
-      return callback(null, true);
-    }
-    callback(new Error('Not allowed by CORS'));
+
+    // Do NOT throw — just deny cleanly (avoids flooding global error handler)
+    return callback(null, false);
   },
   credentials: true,
   methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
+
+// ── Handle CORS pre-flight OPTIONS cleanly ───────────────────
+app.options('*', cors());
 
 // ── Body parsing ─────────────────────────────────────────────
 app.use(express.json({ limit: '10mb' }));
