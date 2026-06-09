@@ -1,6 +1,6 @@
 // Routes: Image upload to Supabase Storage
 import { Router, Request, Response } from 'express';
-import multer from 'multer';
+import multer, { FileFilterCallback } from 'multer';
 import { requireAuth } from '../middleware/auth';
 import { uploadImage } from '../services/imageService';
 
@@ -9,7 +9,7 @@ export const uploadRouter = Router();
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
-  fileFilter: (_req, file, cb) => {
+  fileFilter: (_req: Request, file: Express.Multer.File, cb: FileFilterCallback) => {
     if (file.mimetype.startsWith('image/')) {
       cb(null, true);
     } else {
