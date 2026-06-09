@@ -82,6 +82,11 @@ export const metadata: Metadata = {
     // Add your Google Search Console verification code here after claiming your property
     // google: 'YOUR_GOOGLE_VERIFICATION_CODE',
   },
+  icons: {
+    icon: '/favicon.png',
+    shortcut: '/favicon.png',
+    apple: '/favicon.png',
+  },
 };
 
 // WebSite + SearchAction schema — enables Google Sitelinks search box
@@ -124,9 +129,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Merriweather:wght@300;400;700&family=Outfit:wght@400;600;700;800&display=swap" />
-        <link rel="icon" href="/favicon.ico" sizes="any" />
-        <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+        <link rel="icon" href="/favicon.png" type="image/png" />
+        <link rel="shortcut icon" href="/favicon.png" type="image/png" />
+        <link rel="apple-touch-icon" href="/favicon.png" />
         <meta name="theme-color" content="#0A66C2" />
         <meta name="format-detection" content="telephone=no" />
         {/* WebSite structured data for Google Sitelinks search box */}

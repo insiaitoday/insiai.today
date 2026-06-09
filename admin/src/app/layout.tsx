@@ -3,9 +3,14 @@ import type { Metadata } from 'next';
 import { Toaster } from 'react-hot-toast';
 
 export const metadata: Metadata = {
-  title: { default: 'LeviAI Admin', template: '%s | LeviAI Admin' },
-  description: 'LeviAI Today Admin Panel',
+  title: { default: 'INSI AI Admin', template: '%s | INSI AI Admin' },
+  description: 'INSI AI Today Admin Panel',
   robots: 'noindex, nofollow',
+  icons: {
+    icon: '/favicon.png',
+    shortcut: '/favicon.png',
+    apple: '/favicon.png',
+  },
 };
 
 export default function AdminRootLayout({ children }: { children: React.ReactNode }) {
@@ -14,6 +19,9 @@ export default function AdminRootLayout({ children }: { children: React.ReactNod
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link rel="icon" href="/favicon.png" type="image/png" />
+        <link rel="shortcut icon" href="/favicon.png" type="image/png" />
+        <link rel="apple-touch-icon" href="/favicon.png" />
         <meta name="theme-color" content="#0D1117" />
       </head>
       <body>
