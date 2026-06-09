@@ -38,8 +38,15 @@ app.use(cors({
     const targetOrigin = [
       process.env.FRONTEND_URL,
       process.env.ADMIN_URL,
+      // Production domains
+      'https://insiaitoday.com',
+      'https://www.insiaitoday.com',
+      'https://insiai.today',
+      'https://www.insiai.today',
+      'https://admin.insiai.today',
+      // Local dev
       'http://localhost:3000',
-      'http://localhost:3001'
+      'http://localhost:3001',
     ];
     if (targetOrigin.includes(origin)) {
       return callback(null, true);
