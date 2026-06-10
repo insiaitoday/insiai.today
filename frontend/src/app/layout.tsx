@@ -1,12 +1,15 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import { Suspense } from 'react';
+import Script from 'next/script';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { CompanyTicker } from '@/components/layout/CompanyTicker';
 import { ReadingProgressBar } from '@/components/layout/ReadingProgressBar';
 import { BackToTop } from '@/components/layout/BackToTop';
 import { Toaster } from 'react-hot-toast';
+
+const GA_MEASUREMENT_ID = 'G-E5JJ4LWRSQ';
 
 const siteName = process.env.NEXT_PUBLIC_SITE_NAME || 'INSI AI Today';
 const siteUrl  = process.env.NEXT_PUBLIC_SITE_URL  || 'https://insiai.today';
@@ -138,6 +141,25 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }}
+        />
+        {/* Google Analytics — G-E5JJ4LWRSQ */}
+        <Script
+          strategy="afterInteractive"
+          src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`}
+        />
+        <Script
+          id="google-analytics"
+          strategy="afterInteractive"
+          dangerouslySetInnerHTML={{
+            __html: `
+              window.dataLayer = window.dataLayer || [];
+              function gtag(){dataLayer.push(arguments);}
+              gtag('js', new Date());
+              gtag('config', '${GA_MEASUREMENT_ID}', {
+                page_path: window.location.pathname,
+              });
+            `,
+          }}
         />
         {/* AdSense — add your publisher ID below after approval */}
         {/* <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXXXXXXXXXX" crossOrigin="anonymous" /> */}
