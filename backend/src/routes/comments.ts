@@ -3,6 +3,7 @@ import { Router, Request, Response } from 'express';
 import { supabase } from '../lib/supabase';
 import { requireAuth } from '../middleware/auth';
 import { commentLimiter } from '../middleware/rateLimit';
+import { getClientIp } from '../lib/ip';
 
 export const commentsRouter = Router();
 
@@ -47,7 +48,7 @@ commentsRouter.get('/:id/comments', async (req: Request, res: Response) => {
 commentsRouter.post('/:id/comments', commentLimiter, async (req: Request, res: Response) => {
   const { id } = req.params;
   const { author_name, author_email, content, parent_id } = req.body;
-  const ip = req.ip || '0.0.0.0';
+  const ip = getClientIp(req);
 
   if (!author_name || !author_email || !content) {
     res.status(400).json({ error: 'Name, email and content are required' });

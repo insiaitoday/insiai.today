@@ -2,6 +2,7 @@
 import { Router, Request, Response } from 'express';
 import { supabase } from '../lib/supabase';
 import { voteLimiter } from '../middleware/rateLimit';
+import { getClientIp } from '../lib/ip';
 
 export const votesRouter = Router();
 
@@ -9,7 +10,7 @@ export const votesRouter = Router();
 votesRouter.post('/:id/vote', voteLimiter, async (req: Request, res: Response) => {
   const { id } = req.params;
   const { type } = req.body as { type: 'up' | 'down' };
-  const ip = req.ip || '0.0.0.0';
+  const ip = getClientIp(req);
 
   if (!['up', 'down'].includes(type)) {
     res.status(400).json({ error: 'Vote type must be "up" or "down"' });
@@ -67,7 +68,7 @@ votesRouter.post('/:id/vote', voteLimiter, async (req: Request, res: Response) =
 // GET /api/posts/:id/my-vote — check if IP already voted
 votesRouter.get('/:id/my-vote', async (req: Request, res: Response) => {
   const { id } = req.params;
-  const ip = req.ip || '0.0.0.0';
+  const ip = getClientIp(req);
 
   const { data } = await supabase
     .from('post_votes')

@@ -3,6 +3,7 @@ import { Router, Request, Response } from 'express';
 import { supabase } from '../lib/supabase';
 import { requireAuth } from '../middleware/auth';
 import { generalLimiter } from '../middleware/rateLimit';
+import { getClientIp } from '../lib/ip';
 
 export const whatsappRouter = Router();
 
@@ -41,7 +42,7 @@ whatsappRouter.post('/subscribe', generalLimiter, async (req: Request, res: Resp
     }
 
     // Get IP and user agent
-    const ip_address = req.ip || req.headers['x-forwarded-for'] as string || 'unknown';
+    const ip_address = getClientIp(req);
     const user_agent = req.headers['user-agent'] || 'unknown';
 
     // Insert new subscriber

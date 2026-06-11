@@ -23,6 +23,10 @@ import { startCronJobs } from './services/cronJobs';
 dotenv.config();
 
 const app = express();
+
+// Trust reverse proxies (Render, Vercel, Nginx, Cloudflare, etc.) to get correct client IPs
+app.set('trust proxy', true);
+
 const PORT = process.env.PORT || 3002;
 
 // ── Security middleware ──────────────────────────────────────

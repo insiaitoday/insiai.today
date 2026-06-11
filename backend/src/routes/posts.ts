@@ -7,6 +7,7 @@ import { supabase } from '../lib/supabase';
 import { generateUniqueSlug } from '../lib/slugify';
 import { requireAuth } from '../middleware/auth';
 import { generalLimiter } from '../middleware/rateLimit';
+import { getClientIp } from '../lib/ip';
 
 export const postsRouter = Router();
 
@@ -151,10 +152,7 @@ postsRouter.post('/:slug/view', generalLimiter, async (req: Request, res: Respon
     }
 
     // Get client IP — normalise localhost variants to a single value
-    const rawIp = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() ||
-                  req.socket.remoteAddress ||
-                  req.ip ||
-                  'unknown';
+    const rawIp = getClientIp(req);
 
     // Treat all localhost IPs the same (::1 / 127.0.0.1 / ::ffff:127.0.0.1)
     const isLocalhost = rawIp === '::1' || rawIp.startsWith('127.') || rawIp.startsWith('::ffff:127.');

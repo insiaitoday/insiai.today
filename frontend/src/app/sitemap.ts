@@ -99,9 +99,8 @@ async function fetchPublishedPosts(): Promise<PostSitemapEntry[]> {
   try {
     const url = `${API_URL}/api/posts?status=published&limit=5000&sort=new`;
     const res = await fetch(url, {
-      // Revalidate every hour — balances freshness with server load.
-      // Do NOT use cache: 'no-store' for sitemaps (would hit backend on every Google fetch)
-      next: { revalidate: 3600 },
+      // Don't cache the API fetch so that we always get the freshest posts
+      cache: 'no-store',
       headers: { 'Content-Type': 'application/json' },
     });
 
@@ -187,6 +186,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   return [...staticEntries, ...categoryEntries, ...postEntries];
 }
 
-// Revalidate the sitemap page itself every hour (ISR)
-// This controls how often Next.js re-runs the sitemap() function
-export const revalidate = 3600;
+// Disable sitemap caching to ensure it updates immediately when articles are posted
+export const revalidate = 0;
+export const dynamic = 'force-dynamic';
+
