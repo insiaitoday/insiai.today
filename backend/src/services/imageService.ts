@@ -21,26 +21,43 @@ export async function downloadAndUploadThumbnail(imageUrl: string, slug: string)
   const buffer = Buffer.from(response.data);
 
   // Optimize: resize to 800x450 WebP
-  const optimized = await sharp(buffer)
-    .resize(800, 450, { fit: 'cover', position: 'center' })
-    .webp({ quality: 82 })
-    .toBuffer();
+  let optimized = buffer;
+  try {
+    optimized = await sharp(buffer)
+      .resize(800, 450, { fit: 'cover', position: 'center' })
+      .webp({ quality: 82 })
+      .toBuffer();
+  } catch (err) {
+    console.warn('Sharp download-and-upload optimization failed, uploading raw file:', err);
+  }
 
   const fileName = `${slug}-${Date.now()}.webp`;
   const filePath = `thumbnails/${fileName}`;
 
-  // Upload to Supabase Storage
-  const { error } = await supabase.storage
-    .from(BUCKET)
+  let activeBucket = BUCKET;
+  let { error } = await supabase.storage
+    .from(activeBucket)
     .upload(filePath, optimized, {
       contentType: 'image/webp',
       upsert: false,
     });
 
-  if (error) throw error;
+  if (error) {
+    console.error(`Failed uploading to primary bucket ${activeBucket}:`, error);
+    const altBucket = BUCKET === 'post-thumbnail' ? 'post-thumbnails' : 'post-thumbnail';
+    console.log(`Retrying upload with alternative bucket ${altBucket}...`);
+    const { error: altError } = await supabase.storage
+      .from(altBucket)
+      .upload(filePath, optimized, {
+        contentType: 'image/webp',
+        upsert: false,
+      });
+    if (altError) throw error; // Throw original error if fallback also fails
+    activeBucket = altBucket;
+  }
 
   // Get public URL
-  const { data } = supabase.storage.from(BUCKET).getPublicUrl(filePath);
+  const { data } = supabase.storage.from(activeBucket).getPublicUrl(filePath);
   return data.publicUrl;
 }
 
@@ -53,22 +70,38 @@ export async function uploadImage(buffer: Buffer, originalName: string, mimeType
 
   // Optimize if it's an image
   let processed = buffer;
+  let contentType = 'image/webp';
+  let finalExt = '.webp';
   try {
     processed = await sharp(buffer)
       .resize(1200, undefined, { withoutEnlargement: true })
       .webp({ quality: 85 })
       .toBuffer();
-  } catch { /* use original */ }
+  } catch (err) {
+    console.warn('Sharp image optimization failed, uploading raw file:', err);
+    contentType = mimeType;
+    finalExt = ext;
+  }
 
-  const filePath = `uploads/${name.replace(ext, '.webp')}`;
+  const filePath = `uploads/${name.replace(ext, finalExt)}`;
 
-  const { error } = await supabase.storage
-    .from(BUCKET)
-    .upload(filePath, processed, { contentType: 'image/webp', upsert: false });
+  let activeBucket = BUCKET;
+  let { error } = await supabase.storage
+    .from(activeBucket)
+    .upload(filePath, processed, { contentType, upsert: false });
 
-  if (error) throw error;
+  if (error) {
+    console.error(`Failed uploading image to primary bucket ${activeBucket}:`, error);
+    const altBucket = BUCKET === 'post-thumbnail' ? 'post-thumbnails' : 'post-thumbnail';
+    console.log(`Retrying upload with alternative bucket ${altBucket}...`);
+    const { error: altError } = await supabase.storage
+      .from(altBucket)
+      .upload(filePath, processed, { contentType, upsert: false });
+    if (altError) throw error;
+    activeBucket = altBucket;
+  }
 
-  const { data } = supabase.storage.from(BUCKET).getPublicUrl(filePath);
+  const { data } = supabase.storage.from(activeBucket).getPublicUrl(filePath);
   return data.publicUrl;
 }
 
@@ -76,27 +109,55 @@ export async function uploadImage(buffer: Buffer, originalName: string, mimeType
  * Optimize a raw file buffer to 1200x630 WebP and upload to Supabase Storage.
  * Returns the public URL of the uploaded image.
  */
-export async function uploadThumbnail(buffer: Buffer, postId: string): Promise<string> {
-  const optimized = await sharp(buffer)
-    .resize(1200, 630, {
-      fit: 'cover',
-      position: 'center',
-    })
-    .webp({ quality: 85 })
-    .toBuffer();
+export async function uploadThumbnail(
+  buffer: Buffer,
+  postId: string,
+  originalName: string = 'thumbnail.jpg',
+  mimeType: string = 'image/jpeg'
+): Promise<string> {
+  let processed = buffer;
+  let contentType = 'image/webp';
+  let ext = '.webp';
 
-  const fileName = `${postId}-${Date.now()}.webp`;
+  try {
+    processed = await sharp(buffer)
+      .resize(1200, 630, {
+        fit: 'cover',
+        position: 'center',
+      })
+      .webp({ quality: 85 })
+      .toBuffer();
+  } catch (err) {
+    console.warn('Sharp thumbnail optimization failed, uploading raw file:', err);
+    contentType = mimeType;
+    ext = path.extname(originalName) || '.jpg';
+  }
+
+  const fileName = `${postId}-${Date.now()}${ext}`;
   const filePath = `thumbnails/${fileName}`;
 
-  const { error } = await supabase.storage
-    .from(BUCKET)
-    .upload(filePath, optimized, {
-      contentType: 'image/webp',
+  let activeBucket = BUCKET;
+  let { error } = await supabase.storage
+    .from(activeBucket)
+    .upload(filePath, processed, {
+      contentType: contentType,
       upsert: false,
     });
 
-  if (error) throw error;
+  if (error) {
+    console.error(`Failed uploading thumbnail to primary bucket ${activeBucket}:`, error);
+    const altBucket = BUCKET === 'post-thumbnail' ? 'post-thumbnails' : 'post-thumbnail';
+    console.log(`Retrying upload with alternative bucket ${altBucket}...`);
+    const { error: altError } = await supabase.storage
+      .from(altBucket)
+      .upload(filePath, processed, {
+        contentType: contentType,
+        upsert: false,
+      });
+    if (altError) throw error;
+    activeBucket = altBucket;
+  }
 
-  const { data } = supabase.storage.from(BUCKET).getPublicUrl(filePath);
+  const { data } = supabase.storage.from(activeBucket).getPublicUrl(filePath);
   return data.publicUrl;
 }

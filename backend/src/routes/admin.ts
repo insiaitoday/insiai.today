@@ -34,7 +34,7 @@ adminRouter.post('/upload-thumbnail', upload.single('file'), async (req: Request
     const postId = req.body.postId || uuidv4();
     
     // Upload directly to Supabase Storage
-    const url = await uploadThumbnail(req.file.buffer, postId);
+    const url = await uploadThumbnail(req.file.buffer, postId, req.file.originalname, req.file.mimetype);
 
     res.json({ url, success: true });
   } catch (err) {
