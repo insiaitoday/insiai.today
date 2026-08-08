@@ -85,6 +85,10 @@ export const metadata: Metadata = {
     // Add your Google Search Console verification code here after claiming your property
     // google: 'YOUR_GOOGLE_VERIFICATION_CODE',
   },
+  // AdSense site ownership verification meta tag — rendered in initial SSR <head>
+  other: {
+    'google-adsense-account': 'ca-pub-4336416914554298',
+  },
   icons: {
     icon: '/favicon.png',
     shortcut: '/favicon.png',
@@ -161,7 +165,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             `,
           }}
         />
-        {/* Google AdSense */}
+        {/* Google AdSense — strategy=afterInteractive: loaded after hydration, non-blocking */}
         <Script
           id="google-adsense"
           async

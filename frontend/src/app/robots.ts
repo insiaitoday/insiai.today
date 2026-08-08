@@ -24,15 +24,21 @@ export default function robots(): MetadataRoute.Robots {
         disallow: [
           '/api/',      // backend proxy routes
           '/admin/',    // admin portal (separate deployment)
-          '/_next/',    // Next.js internal assets
+          // NOTE: /_next/ intentionally NOT blocked — Next.js static
+          // assets must be crawlable for Google to render pages correctly.
         ],
       },
-      // ── Google ────────────────────────────────────────────────
+      // ── Google (Googlebot) ────────────────────────────────────
       {
         userAgent: 'Googlebot',
         allow: '/',
         disallow: ['/api/', '/admin/'],
       },
+      // ── Google AdSense crawlers ───────────────────────────────
+      // Mediapartners-Google: scans page content for ad targeting & verification
+      { userAgent: 'Mediapartners-Google',   allow: '/' },
+      // Google-Display-Ads-Bot: verifies ad placements on live pages
+      { userAgent: 'Google-Display-Ads-Bot', allow: '/' },
       // ── Bing ─────────────────────────────────────────────────
       {
         userAgent: 'Bingbot',
@@ -41,15 +47,16 @@ export default function robots(): MetadataRoute.Robots {
         crawlDelay: 1,
       },
       // ── Block AI training scrapers ────────────────────────────
-      { userAgent: 'GPTBot',        disallow: ['/'] },
-      { userAgent: 'ChatGPT-User',  disallow: ['/'] },
-      { userAgent: 'CCBot',         disallow: ['/'] },
-      { userAgent: 'anthropic-ai',  disallow: ['/'] },
+      { userAgent: 'GPTBot',          disallow: ['/'] },
+      { userAgent: 'ChatGPT-User',    disallow: ['/'] },
+      { userAgent: 'CCBot',           disallow: ['/'] },
+      { userAgent: 'anthropic-ai',    disallow: ['/'] },
       { userAgent: 'Google-Extended', disallow: ['/'] },
-      { userAgent: 'PerplexityBot', disallow: ['/'] },
+      { userAgent: 'PerplexityBot',   disallow: ['/'] },
     ],
     // Sitemap location — must be absolute URL, same domain as GSC property
     sitemap: `${siteUrl}/sitemap.xml`,
-    host: siteUrl,
+    // NOTE: `host:` directive intentionally removed — it is not part of the
+    // robots.txt standard and is ignored or flagged as invalid by Google.
   };
 }
