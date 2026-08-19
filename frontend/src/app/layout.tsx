@@ -133,6 +133,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <head>
+        {/* Adcash — AutoTag */}
+        <script id="aclib" type="text/javascript" src="//acscdn.com/script/aclib.js" />
+        <Script
+          id="adcash-autotag"
+          strategy="afterInteractive"
+          dangerouslySetInnerHTML={{
+            __html: `aclib.runAutoTag({ zoneId: '2u2gkgpm1r' });`,
+          }}
+        />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Merriweather:wght@300;400;700&family=Outfit:wght@400;600;700;800&display=swap" />

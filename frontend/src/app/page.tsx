@@ -84,9 +84,6 @@ export default async function HomePage({ searchParams }: HomePageProps) {
         <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-2">
           <span className="gradient-text">AI News</span> That Matters
         </h1>
-        <p className="text-text-secondary max-w-lg mx-auto text-xs sm:text-sm">
-          Curated from 30+ top AI sources · Updated every 2 hours · Editorial insights
-        </p>
       </div>
 
       {/* ── Top Companies Section ──────────────────────────────────────────── */}
